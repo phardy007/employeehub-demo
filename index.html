@@ -2,851 +2,1143 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>OK Traffic Control Services — EmployeeHub</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>OK Traffic Control Services - EmployeeHub</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-:root{--navy:#1e3a5f;--blue:#2c5282;--light-blue:#4a90e2;--green:#10b981;--red:#ef4444;--amber:#f59e0b;--bg:#f0f4f8;--white:#fff;--border:#e2e8f0;--text:#1a1a1a;--muted:#64748b;--light:#f8fafc;}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+:root{
+  --white:#FFFFFF; --off:#F7F7F5; --border:#E4E4DF; --muted:#9A9A94;
+  --body:#4A4A44; --ink:#111110; --orange:#E8550A; --o-soft:#FEF1EA;
+  --green:#1A9E5C; --g-soft:#EAF7F1; --amber:#C97B00; --a-soft:#FEF7E4;
+  --red:#C93030; --r-soft:#FEEBEB; --blue:#2563EB; --b-soft:#EFF4FF;
+  --nav-h:64px; --hdr-h:58px; --safe-b:env(safe-area-inset-bottom,0px);
+  --sidebar-w:240px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{font-family:"DM Sans",sans-serif;font-size:15px;line-height:1.5;background:var(--white);color:var(--ink);min-height:100dvh;overflow-x:hidden}
 
-#loginScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem;background:linear-gradient(160deg,var(--navy),var(--blue));}
-.login-logo{width:80px;height:80px;background:white;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:1rem;box-shadow:0 4px 20px rgba(0,0,0,0.3);}
-.login-title{color:white;font-size:1.5rem;font-weight:700;margin-bottom:0.25rem;}
-.login-sub{color:rgba(255,255,255,0.7);font-size:0.875rem;margin-bottom:2rem;}
-.login-card{background:white;border-radius:16px;padding:2rem;width:100%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
-.form-group{margin-bottom:1rem;}
-.form-group label{display:block;font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.5px;}
-.form-group input,.form-group select,.form-group textarea{width:100%;padding:0.7rem;border:2px solid var(--border);border-radius:10px;font-size:0.9rem;transition:border-color 0.2s;background:white;}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--blue);}
-.btn{width:100%;padding:0.8rem;border:none;border-radius:10px;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:0.5rem;}
-.btn:disabled{opacity:0.6;cursor:not-allowed;}
-.btn-primary{background:var(--blue);color:white;}
-.btn-primary:hover:not(:disabled){background:var(--navy);}
-.btn-sm{width:auto;padding:0.4rem 0.85rem;font-size:0.78rem;border-radius:8px;}
-.btn-success{background:var(--green);color:white;}
-.btn-danger{background:var(--red);color:white;}
-.btn-amber{background:var(--amber);color:white;}
-.btn-secondary{background:var(--border);color:var(--text);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(26,158,92,.35)}60%{box-shadow:0 0 0 6px rgba(26,158,92,0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fu {animation:fadeUp .28s ease both}
+.fu1{animation:fadeUp .28s .06s ease both}
+.fu2{animation:fadeUp .28s .12s ease both}
+.fu3{animation:fadeUp .28s .18s ease both}
+.fu4{animation:fadeUp .28s .24s ease both}
 
-#appShell{display:none;flex-direction:column;min-height:100vh;}
-.top-bar{background:linear-gradient(135deg,var(--navy),var(--blue));color:white;padding:0.8rem 1rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.2);}
-.top-bar-left{display:flex;align-items:center;gap:0.75rem;}
-.top-bar-logo{width:36px;height:36px;background:white;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
-.top-bar-title{font-size:0.95rem;font-weight:700;line-height:1.2;}
-.top-bar-sub{font-size:0.68rem;opacity:0.75;}
-.top-bar-right{display:flex;align-items:center;gap:0.6rem;}
-.role-pill{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);padding:0.25rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:700;}
-.notif-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;font-size:0.75rem;font-weight:700;cursor:pointer;border-radius:8px;padding:0.3rem 0.6rem;}
+/* ── LOGIN ── */
+#loginScreen{min-height:100dvh;display:flex;flex-direction:column;background:var(--white);max-width:480px;margin:0 auto}
+.login-hero{background:var(--ink);padding:48px 28px 36px;position:relative;overflow:hidden}
+.login-hero::after{content:"";position:absolute;right:-40px;bottom:-40px;width:200px;height:200px;border-radius:50%;background:var(--orange);opacity:.12}
+.lh-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px;position:relative;z-index:1}
+.lh-logoimg{width:52px;height:52px;object-fit:contain;border-radius:8px;background:white;padding:3px;flex-shrink:0}
+.lh-stack{display:flex;flex-direction:column;justify-content:center}
+.lh-co{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px;line-height:1.25}
+.lh-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:1px;letter-spacing:.1px}
+.lh-headline{font-size:34px;font-weight:700;color:#fff;letter-spacing:-1px;line-height:1.1;position:relative;z-index:1}
+.lh-headline em{font-style:normal;color:var(--orange)}
+.lh-tagline{margin-top:10px;font-size:13px;color:rgba(255,255,255,.4);position:relative;z-index:1;display:flex;align-items:center;gap:7px}
+.lh-tagline::before{content:"";display:block;width:20px;height:2px;background:var(--orange);flex-shrink:0}
 
-.main-content{flex:1;padding:1rem;max-width:680px;margin:0 auto;width:100%;}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);display:flex;z-index:100;box-shadow:0 -2px 12px rgba(0,0,0,0.08);}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0.4rem 0.1rem;border:none;background:none;cursor:pointer;color:var(--muted);transition:color 0.2s;position:relative;}
-.nav-item.active{color:var(--blue);}
-.nav-icon{font-size:1.1rem;line-height:1;}
-.nav-label{font-size:0.58rem;font-weight:600;margin-top:0.15rem;}
-.nav-badge{position:absolute;top:4px;right:calc(50% - 14px);background:var(--red);color:white;font-size:0.58rem;font-weight:700;border-radius:10px;padding:0.1rem 0.3rem;}
+.login-form{flex:1;padding:28px 24px 40px}
+.f-lbl{display:block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.f-inp{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:13px 14px;font-size:15px;font-family:"DM Sans",sans-serif;color:var(--ink);background:var(--white);outline:none;transition:border-color .15s,box-shadow .15s}
+.f-inp:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,85,10,.09)}
+.f-inp::placeholder{color:#C4C4C0}
+.fblk{margin-bottom:13px}
+.l-btn{width:100%;background:var(--ink);color:#fff;border:none;border-radius:10px;padding:15px;font-size:15px;font-weight:700;font-family:"DM Sans",sans-serif;cursor:pointer;margin-top:4px;letter-spacing:-.2px;transition:background .15s,transform .1s;position:relative}
+.l-btn:hover{background:#2A2A28}
+.l-btn:active{transform:scale(.99)}
+.l-btn.loading{color:transparent;pointer-events:none}
+.l-btn.loading::after{content:"";position:absolute;inset:0;margin:auto;width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite}
+.l-err{margin-top:11px;padding:11px 14px;background:var(--r-soft);border:1px solid rgba(201,48,48,.2);border-radius:8px;font-size:13px;color:var(--red);display:none}
+.l-div{display:flex;align-items:center;gap:12px;margin:22px 0 16px}
+.l-div::before,.l-div::after{content:"";flex:1;height:1px;background:var(--border)}
+.l-div span{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap}
+.demo-row{display:flex;gap:10px}
+.demo-btn{flex:1;border:1.5px solid var(--border);border-radius:10px;padding:13px 10px 11px;background:var(--white);cursor:pointer;font-family:"DM Sans",sans-serif;text-align:center;transition:all .15s}
+.demo-btn:hover{border-color:var(--ink);background:var(--off)}
+.demo-btn:active{transform:scale(.98)}
+.db-icon{font-size:22px;margin-bottom:4px}
+.db-label{font-size:13px;font-weight:700;color:var(--ink);display:block;letter-spacing:-.1px}
+.db-sub{font-size:11px;color:var(--muted);display:block;margin-top:1px}
 
-.card{background:white;border-radius:14px;padding:1.25rem;margin-bottom:1rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);border:1px solid var(--border);}
-.card-title{font-size:0.95rem;font-weight:700;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;}
-.stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem;margin-bottom:1rem;}
-.stat-box{background:var(--light);border-radius:12px;padding:0.875rem;text-align:center;}
-.stat-num{font-size:1.6rem;font-weight:800;color:var(--blue);}
-.stat-lbl{font-size:0.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-top:0.2rem;}
+/* ── APP SHELL ── */
+#app{display:none;min-height:100dvh}
 
-.clock-card{background:linear-gradient(135deg,var(--navy),var(--blue));border-radius:16px;padding:1.5rem;color:white;text-align:center;margin-bottom:1rem;}
-.clock-time{font-size:2.25rem;font-weight:800;letter-spacing:-1px;}
-.clock-date{font-size:0.82rem;opacity:0.8;margin-bottom:1rem;}
-.clock-status{display:inline-block;padding:0.3rem 0.875rem;border-radius:20px;font-size:0.78rem;font-weight:700;margin-bottom:1rem;}
-.clocked-in{background:rgba(16,185,129,0.3);border:1px solid rgba(16,185,129,0.6);}
-.clocked-out{background:rgba(239,68,68,0.3);border:1px solid rgba(239,68,68,0.6);}
-.clock-btn{padding:0.875rem;border:none;border-radius:12px;font-size:0.95rem;font-weight:700;cursor:pointer;width:100%;}
-.btn-clock-in{background:var(--green);color:white;}
-.btn-clock-out{background:var(--red);color:white;}
-.gps-indicator{font-size:0.72rem;opacity:0.8;margin-top:0.65rem;display:flex;align-items:center;justify-content:center;gap:0.4rem;}
-.gps-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(1.3);}}
+/* HEADER */
+.app-hdr{
+  position:sticky;top:0;z-index:300;
+  background:var(--white);border-bottom:1.5px solid var(--ink);
+  height:var(--hdr-h);display:flex;align-items:center;justify-content:space-between;padding:0 18px;
+}
+.hdr-logo{display:flex;align-items:center;gap:10px}
+.hdr-logoimg{width:36px;height:36px;object-fit:contain;border-radius:6px;background:var(--ink);padding:2px;flex-shrink:0}
+.hdr-stack{display:flex;flex-direction:column;justify-content:center}
+.hdr-co{font-size:13px;font-weight:700;color:var(--ink);letter-spacing:-.2px;line-height:1.2}
+.hdr-tag{font-size:10px;color:var(--muted);letter-spacing:.1px}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.hdr-usr{display:flex;align-items:center;gap:7px;padding:4px 10px 4px 4px;border:1.5px solid var(--border);border-radius:50px}
+.hdr-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0}
+.hdr-nm{font-size:12px;font-weight:600;color:var(--ink);line-height:1.2}
+.hdr-rl{font-size:10px;color:var(--muted)}
+.hdr-so{border:1.5px solid var(--border);background:var(--white);border-radius:6px;padding:6px 10px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;font-family:"DM Sans",sans-serif;transition:all .15s;white-space:nowrap}
+.hdr-so:hover{color:var(--red);border-color:var(--red)}
+.hdr-usr{cursor:pointer;position:relative}
+.hdr-drop{
+  position:absolute;top:calc(100% + 8px);right:0;
+  background:var(--white);border:1.5px solid var(--ink);
+  border-radius:10px;padding:4px;min-width:140px;
+  box-shadow:0 4px 16px rgba(0,0,0,.1);
+  display:none;z-index:400;
+  animation:fadeUp .15s ease both;
+}
+.hdr-drop.open{display:block}
+.hdr-drop-item{
+  display:flex;align-items:center;gap:8px;
+  width:100%;padding:10px 12px;border:none;background:none;
+  font-family:"DM Sans",sans-serif;font-size:14px;font-weight:500;
+  color:var(--red);cursor:pointer;border-radius:7px;text-align:left;
+  transition:background .12s;
+}
+.hdr-drop-item:hover{background:var(--r-soft)}
 
-.badge{display:inline-flex;align-items:center;padding:0.22rem 0.6rem;border-radius:12px;font-size:0.7rem;font-weight:700;}
-.badge-green{background:#d1fae5;color:#065f46;}
-.badge-red{background:#fee2e2;color:#991b1b;}
-.badge-amber{background:#fef3c7;color:#92400e;}
-.badge-blue{background:#dbeafe;color:#1e40af;}
-.badge-gray{background:#f1f5f9;color:#475569;}
+/* ── RESPONSIVE LAYOUT ── */
+.app-body{display:flex;min-height:calc(100dvh - var(--hdr-h))}
 
-.list-item{display:flex;align-items:center;gap:0.75rem;padding:0.75rem 0;border-bottom:1px solid var(--border);}
-.list-item:last-child{border-bottom:none;}
-.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--light-blue));color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.82rem;flex-shrink:0;}
-.avatar-sm{width:30px;height:30px;font-size:0.72rem;}
-.list-info{flex:1;min-width:0;}
-.list-name{font-weight:600;font-size:0.875rem;}
-.list-sub{font-size:0.72rem;color:var(--muted);margin-top:0.1rem;}
-.list-right{text-align:right;flex-shrink:0;}
+/* SIDEBAR (desktop) */
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;
+  border-right:1.5px solid var(--ink);
+  position:sticky;top:var(--hdr-h);height:calc(100dvh - var(--hdr-h));
+  overflow-y:auto;display:flex;flex-direction:column;
+  background:var(--white);
+}
+.sidebar-nav{padding:16px 10px;flex:1}
+.sb-section{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);padding:0 8px;margin:16px 0 6px}
+.sb-section:first-child{margin-top:0}
+.sb-btn{
+  display:flex;align-items:center;gap:10px;
+  width:100%;padding:9px 10px;border:none;background:none;
+  border-radius:8px;cursor:pointer;font-family:"DM Sans",sans-serif;
+  font-size:14px;font-weight:500;color:var(--body);
+  text-align:left;transition:all .15s;position:relative;
+}
+.sb-btn:hover{background:var(--off);color:var(--ink)}
+.sb-btn.active{background:var(--o-soft);color:var(--orange);font-weight:700}
+.sb-btn.active::before{content:"";position:absolute;left:0;top:20%;bottom:20%;width:3px;background:var(--orange);border-radius:0 3px 3px 0}
+.sb-btn svg{width:18px;height:18px;stroke-width:1.8;flex-shrink:0}
+.sb-badge{margin-left:auto;background:var(--orange);color:white;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:16px;text-align:center}
+.sidebar-footer{padding:14px 10px;border-top:1px solid var(--border)}
+.sb-user{display:flex;align-items:center;gap:9px;padding:8px;border-radius:8px;background:var(--off)}
+.sb-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0}
+.sb-nm{font-size:13px;font-weight:600;color:var(--ink)}
+.sb-rl{font-size:11px;color:var(--muted)}
 
-.mini-map{background:#e8f4f8;border:2px solid #93c5fd;border-radius:12px;height:200px;position:relative;overflow:hidden;margin-bottom:0.75rem;}
-.map-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(100,149,237,0.12) 1px,transparent 1px),linear-gradient(90deg,rgba(100,149,237,0.12) 1px,transparent 1px);background-size:28px 28px;}
-.trail-dot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--blue);border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3);transform:translate(-50%,-50%);}
-.trail-dot.current{background:var(--green);width:14px;height:14px;animation:pulse 2s infinite;}
-.trail-line{position:absolute;background:rgba(44,82,130,0.4);height:2px;transform-origin:left center;}
-.map-overlay{position:absolute;top:8px;left:8px;background:rgba(255,255,255,0.92);border-radius:8px;padding:0.3rem 0.55rem;font-size:0.7rem;font-weight:700;color:var(--navy);}
+/* CONTENT AREA */
+.content-area{flex:1;overflow-x:hidden;min-width:0}
 
-.chat-item{display:flex;align-items:center;gap:0.75rem;padding:0.875rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;}
-.chat-item:hover{background:#eff6ff;}
-.chat-back{display:flex;align-items:center;gap:0.5rem;padding:0.65rem 0;font-weight:700;color:var(--blue);cursor:pointer;border:none;background:none;font-size:0.875rem;}
-.msg-bubble{max-width:78%;padding:0.55rem 0.825rem;border-radius:14px;font-size:0.875rem;line-height:1.5;}
-.msg-out{background:var(--blue);color:white;align-self:flex-end;border-bottom-right-radius:4px;}
-.msg-in{background:#f1f5f9;color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;}
-.msg-time{font-size:0.62rem;opacity:0.6;margin-top:0.2rem;}
-.msg-input-row{display:flex;gap:0.5rem;padding:0.65rem 0 0.4rem;}
-.msg-input-row input{flex:1;padding:0.65rem 0.875rem;border:2px solid var(--border);border-radius:24px;font-size:0.875rem;}
-.msg-input-row input:focus{outline:none;border-color:var(--blue);}
-.msg-send{width:40px;height:40px;border-radius:50%;background:var(--blue);border:none;color:white;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+/* BOTTOM NAV (mobile) */
+.btm-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--white);border-top:1.5px solid var(--ink);
+  display:none;padding-bottom:var(--safe-b);z-index:200;
+}
+.nb{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:9px 4px 11px;border:none;background:none;color:var(--muted);
+  cursor:pointer;gap:3px;position:relative;transition:color .15s;font-family:"DM Sans",sans-serif;
+}
+.nb.active{color:var(--orange)}
+.nb svg{width:21px;height:21px;stroke-width:1.8}
+.nb-lbl{font-size:10px;font-weight:600;letter-spacing:.1px}
+.nb.active::after{content:"";position:absolute;bottom:0;left:20%;right:20%;height:2px;background:var(--orange);border-radius:2px 2px 0 0}
+.n-badge{position:absolute;top:6px;right:calc(50% - 18px);background:var(--orange);color:white;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;min-width:16px;text-align:center;line-height:14px;height:14px}
 
-.ann{border-radius:12px;padding:0.875rem 1rem;margin-bottom:0.75rem;border-left:4px solid;}
-.ann-info{background:#eff6ff;border-color:#3b82f6;}
-.ann-warn{background:#fffbeb;border-color:var(--amber);}
-.ann-success{background:#f0fdf4;border-color:var(--green);}
-.ann-title{font-weight:700;font-size:0.875rem;}
-.ann-body{font-size:0.8rem;color:#475569;margin-top:0.2rem;line-height:1.5;}
-.ann-meta{font-size:0.7rem;color:#94a3b8;margin-top:0.35rem;}
+/* RESPONSIVE BREAKPOINTS */
+@media(max-width:767px){
+  .sidebar{display:none}
+  .btm-nav{display:flex}
+  .content-area{padding-bottom:calc(var(--nav-h) + var(--safe-b) + 4px)}
+  .hdr-tag{display:none}
+  .hdr-nm,.hdr-rl{display:none}
+  .hdr-usr{padding:4px}
+  .hdr-so{display:none}
+}
+@media(min-width:768px){
+  .hdr-so{display:none} /* sign out in sidebar on desktop */
+}
 
-.cert-item{padding:0.75rem 0;border-bottom:1px solid var(--border);}
-.cert-item:last-child{border:none;}
-.cert-bar-bg{height:5px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin-top:0.4rem;}
-.cert-bar-fill{height:100%;border-radius:3px;}
+/* VIEWS */
+.view{display:none;animation:fadeUp .22s ease both}
+.view.active{display:block}
 
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:flex-end;justify-content:center;}
-.modal-overlay.active{display:flex;}
-.modal-sheet{background:white;border-radius:20px 20px 0 0;padding:1.5rem;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;}
-.modal-handle{width:36px;height:4px;background:#e2e8f0;border-radius:2px;margin:0 auto 1.1rem;}
-.modal-title{font-size:1.15rem;font-weight:700;margin-bottom:1.1rem;}
-.modal-actions{display:flex;gap:0.75rem;margin-top:1.1rem;}
-.modal-actions .btn{flex:1;}
+/* PAGE HEADER */
+.pg-hdr{padding:22px 20px 0;margin-bottom:16px}
+.pg-hdrr{display:flex;align-items:flex-start;justify-content:space-between;padding:22px 20px 0;margin-bottom:16px}
+.pg-t{font-size:24px;font-weight:700;letter-spacing:-.6px;color:var(--ink);line-height:1.2}
+.pg-s{font-size:13px;color:var(--muted);margin-top:3px}
 
-.alert-bar{background:#fffbeb;border:1px solid var(--amber);border-radius:10px;padding:0.65rem 0.875rem;font-size:0.8rem;color:#92400e;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;}
-.pb-nav{padding-bottom:75px;}
-.spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.loading{text-align:center;padding:2rem;color:var(--muted);font-size:0.875rem;}
+/* SECTION LABEL */
+.sec-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);padding:0 20px;margin-bottom:8px;margin-top:20px;display:flex;align-items:center;gap:8px}
+.sec-lbl::after{content:"";flex:1;height:1px;background:var(--border)}
+
+/* CARDS */
+.card{margin:0 16px 10px;background:var(--white);border:1.5px solid var(--border);border-radius:14px;overflow:hidden}
+.cp{padding:16px}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-bottom:4px}
+@media(min-width:900px){.stat-grid{grid-template-columns:repeat(4,1fr)}}
+.sc{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:16px 14px;position:relative;overflow:hidden}
+.sc::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--border)}
+.sc.accent::before{background:var(--orange)}
+.sc.green::before{background:var(--green)}
+.sc.amber::before{background:var(--amber)}
+.sc-n{font-family:"DM Mono",monospace;font-size:32px;font-weight:500;letter-spacing:-1px;color:var(--ink);line-height:1}
+.sc-l{font-size:12px;color:var(--muted);margin-top:4px}
+.sc-t{font-size:11px;font-weight:600;margin-top:4px}
+.sc-t.up{color:var(--green)}
+.sc-t.wn{color:var(--amber)}
+
+/* CLOCK WIDGET */
+.clk-w{margin:0 16px 10px}
+.clk-btn{width:100%;border:2px solid var(--ink);border-radius:12px;padding:18px;font-family:"DM Sans",sans-serif;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:-.2px;transition:all .15s;background:var(--white);color:var(--ink)}
+.clk-btn.ci:hover{background:var(--ink);color:white}
+.clk-btn.co{background:var(--orange);border-color:var(--orange);color:white}
+.clk-btn.co:hover{background:#D04508;border-color:#D04508}
+.clk-btn:active{transform:scale(.98)}
+.clk-inf{display:flex;align-items:center;gap:8px;margin-top:9px;padding:10px 14px;background:var(--off);border-radius:10px;border:1px solid var(--border)}
+.ld{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+.ld.on{background:var(--green);animation:pulseDot 2s infinite}
+.clk-txt{font-size:13px;color:var(--body)}
+.clk-txt strong{color:var(--ink);font-weight:600}
+
+/* CHIPS */
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px;letter-spacing:.1px;white-space:nowrap}
+.chip.g{background:var(--g-soft);color:var(--green)}
+.chip.a{background:var(--a-soft);color:var(--amber)}
+.chip.r{background:var(--r-soft);color:var(--red)}
+.chip.o{background:var(--o-soft);color:var(--orange)}
+.chip.k{background:var(--off);color:var(--muted);border:1px solid var(--border)}
+
+/* ALERTS */
+.alert{margin:0 16px 10px;padding:13px 14px;border-radius:10px;display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;border-left:3px solid transparent}
+.alert.dg{background:var(--r-soft);border-left-color:var(--red);color:#7A1A1A}
+.alert.wn{background:var(--a-soft);border-left-color:var(--amber);color:#704400}
+.alert.in{background:var(--b-soft);border-left-color:var(--blue);color:#1E3A8A}
+.alert.ok{background:var(--g-soft);border-left-color:var(--green);color:#0F5132}
+.ai{font-size:16px;flex-shrink:0;margin-top:1px}
+.ab strong{font-weight:700;display:block;margin-bottom:2px}
+
+/* CERT ROW */
+.cert-r{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border)}
+.cert-r:last-child{border-bottom:none}
+.cert-ic{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.cert-ic.g{background:var(--g-soft)}
+.cert-ic.a{background:var(--a-soft)}
+.cert-ic.r{background:var(--r-soft)}
+.cert-nm{font-size:14px;font-weight:600;color:var(--ink);line-height:1.2}
+.cert-ex{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* EMP ROW */
+.emp-r{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border)}
+.emp-r:last-child{border-bottom:none}
+.av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;flex-shrink:0}
+.en{font-size:14px;font-weight:600;color:var(--ink);line-height:1.2}
+.er{font-size:12px;color:var(--muted);margin-top:1px}
+
+/* TIMESHEET */
+.ts-c{margin:0 16px 10px;background:var(--white);border:1.5px solid var(--border);border-radius:14px;overflow:hidden}
+.ts-h{display:flex;align-items:center;gap:10px;padding:14px 16px 12px;border-bottom:1px solid var(--border);background:var(--off)}
+.ts-en{font-size:14px;font-weight:700;color:var(--ink)}
+.ts-dt{font-size:12px;color:var(--muted);margin-left:auto;font-family:"DM Mono",monospace}
+.ts-pl{font-size:11px;color:var(--muted)}
+.ts-g{display:grid;grid-template-columns:1fr 1fr}
+.ts-cell{padding:12px 16px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.ts-cell:nth-child(2n){border-right:none}
+.ts-cell:nth-last-child(-n+2){border-bottom:none}
+.ts-cl{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+.ts-cv{font-size:16px;font-weight:600;color:var(--ink);margin-top:3px;font-family:"DM Mono",monospace}
+.ts-f{padding:12px 16px}
+.apr-btn{width:100%;padding:11px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--white);color:var(--ink);letter-spacing:-.1px}
+.apr-btn:hover{background:var(--ink);color:white;border-color:var(--ink)}
+.apr-btn.done{background:var(--g-soft);color:var(--green);border-color:transparent;cursor:default}
+.apr-btn.done:hover{background:var(--g-soft);color:var(--green)}
+
+/* GPS */
+.gps-card{margin:0 16px 10px;background:var(--ink);border-radius:14px;padding:18px 16px;position:relative;overflow:hidden}
+.gps-card::before{content:"";position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:var(--orange);opacity:.1}
+.gps-ttl{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:14px}
+.gps-viz{display:flex;align-items:center;flex-wrap:wrap;gap:3px;margin-bottom:14px}
+.gps-nd{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.12);flex-shrink:0;transition:background .3s}
+.gps-nd.lg{background:var(--orange)}
+.gps-nd.cur{background:var(--green);box-shadow:0 0 0 3px rgba(26,158,92,.3)}
+.gps-pl{display:flex;flex-wrap:wrap;gap:6px;max-height:140px;overflow-y:auto}
+.gps-pt{background:rgba(255,255,255,.07);border-radius:6px;padding:5px 9px;display:flex;flex-direction:column;gap:1px}
+.gps-pt-t{font-size:11px;font-weight:500;color:rgba(255,255,255,.85);font-family:"DM Mono",monospace}
+.gps-pt-c{font-size:10px;color:rgba(255,255,255,.3);font-family:"DM Mono",monospace}
+.gps-emp{font-size:13px;color:rgba(255,255,255,.3)}
+
+/* ANNOUNCEMENTS */
+.ann-i{padding:14px 16px;border-bottom:1px solid var(--border)}
+.ann-i:last-child{border-bottom:none}
+.ann-hd{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.ann-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ann-ti{font-size:14px;font-weight:700;color:var(--ink)}
+.ann-dt{font-size:11px;color:var(--muted);margin-left:auto;font-family:"DM Mono",monospace}
+.ann-bd{font-size:13px;color:var(--body);line-height:1.5;padding-left:15px}
+
+/* MESSAGES */
+.msg-wrap{max-height:270px;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.bbl{max-width:78%;padding:10px 13px;font-size:14px;line-height:1.45;border-radius:14px}
+.bbl.s{background:var(--ink);color:white;align-self:flex-end;border-bottom-right-radius:3px}
+.bbl.r{background:var(--off);color:var(--ink);align-self:flex-start;border-bottom-left-radius:3px;border:1px solid var(--border)}
+.bbl-m{font-size:10px;opacity:.5;margin-top:4px}
+.msg-cmp{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+.msg-i{flex:1;border:1.5px solid var(--border);border-radius:50px;padding:10px 16px;font-size:14px;font-family:"DM Sans",sans-serif;color:var(--ink);background:var(--off);outline:none;transition:border-color .15s,background .15s}
+.msg-i:focus{border-color:var(--ink);background:var(--white)}
+.msg-sb{width:40px;height:40px;background:var(--ink);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.msg-sb:hover{background:var(--orange)}
+.ch-li{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
+.ch-li:last-child{border-bottom:none}
+.ch-li:hover{background:var(--off)}
+.ch-li.act{background:var(--o-soft);border-left:3px solid var(--orange)}
+.ch-nm{font-size:14px;font-weight:700;color:var(--ink)}
+.ch-pv{font-size:12px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}
+.ch-tm{font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap;font-family:"DM Mono",monospace}
+.unrd{width:8px;height:8px;background:var(--orange);border-radius:50%;flex-shrink:0}
+
+/* FORMS */
+.ff{margin-bottom:11px}
+.ff-lbl{display:block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.ff-inp,.ff-ta,.ff-sel{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;font-size:14px;font-family:"DM Sans",sans-serif;color:var(--ink);background:var(--white);outline:none;transition:border-color .15s,box-shadow .15s}
+.ff-inp:focus,.ff-ta:focus,.ff-sel:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,85,10,.08)}
+.ff-ta{min-height:80px;resize:vertical}
+.f-sub{width:100%;padding:13px;background:var(--ink);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:"DM Sans",sans-serif;cursor:pointer;letter-spacing:-.1px;transition:background .15s}
+.f-sub:hover{background:#2A2A28}
+.f-sub:active{background:var(--orange)}
+
+/* REPORTS */
+.rpt-btn{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;background:var(--white);border-left:none;border-right:none;border-top:none;font-family:"DM Sans",sans-serif;width:100%;text-align:left;transition:background .12s}
+.rpt-btn:last-child{border-bottom:none}
+.rpt-btn:hover{background:var(--off)}
+.rpt-btn:active{background:var(--o-soft)}
+.rpt-ic{width:40px;height:40px;background:var(--off);border:1.5px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.rpt-nm{font-size:14px;font-weight:700;color:var(--ink)}
+.rpt-ds{font-size:12px;color:var(--muted);margin-top:1px}
+.rpt-ar{margin-left:auto;color:var(--muted);font-size:18px;font-weight:300}
+.date-strip{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--off);border-bottom:1px solid var(--border)}
+.d-inp{flex:1;border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;font-family:"DM Mono",monospace;color:var(--ink);background:var(--white);outline:none}
+.d-inp:focus{border-color:var(--orange)}
+.d-sep{font-size:12px;color:var(--muted)}
+
+/* 2-COL GRID for wide screens */
+@media(min-width:900px){
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:0 20px;padding:0 4px}
+  .two-col .card,.two-col .ts-c,.two-col .alert{margin-left:0;margin-right:0}
+  .two-col .sec-lbl{padding-left:0;padding-right:0}
+}
+
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.hidden{display:none!important}
 </style>
 </head>
 <body>
 
+
+<!-- LOGIN -->
 <div id="loginScreen">
-  <div class="login-logo">🚧</div>
-  <div class="login-title">OK Traffic Control Services</div>
-  <div class="login-sub">EmployeeHub Pro</div>
-  <div class="login-card">
-    <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="your@email.com"></div>
-    <div class="form-group"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">Sign In →</button>
-    <div id="loginError" style="color:var(--red);font-size:0.8rem;margin-top:0.75rem;text-align:center;"></div>
-    <p style="text-align:center;font-size:0.72rem;color:var(--muted);margin-top:1rem;">Contact your office manager to get access.</p>
-    <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
-      <p style="text-align:center;font-size:0.72rem;color:var(--muted);margin-bottom:0.75rem;">DEMO ACCOUNTS</p>
-      <div style="display:flex;gap:0.5rem;">
-        <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.5rem;" onclick="fillDemo('marcus@oktcs.net','demo123')">👷 Employee</button>
-        <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.5rem;" onclick="fillDemo('pamela@oktcs.net','demo123')">🏢 Admin</button>
+  <div class="login-hero">
+    <div class="lh-logo fu">
+      <img class="lh-logoimg" src="data:image/png;base64,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" alt="OK Traffic Control Services">
+      <div class="lh-stack">
+        <div class="lh-co">OK Traffic Control Services</div>
+        <div class="lh-sub">EmployeeHub</div>
       </div>
+    </div>
+    <div class="lh-headline fu1">Employee<br><em>Hub.</em></div>
+    <div class="lh-tagline fu2">Everything is going to be O-K</div>
+  </div>
+  <div class="login-form">
+    <div class="fblk fu2">
+      <label class="f-lbl" for="li-e">Email</label>
+      <input class="f-inp" id="li-e" type="email" placeholder="you@email.com" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('li-p').focus()">
+    </div>
+    <div class="fblk fu2">
+      <label class="f-lbl" for="li-p">Password</label>
+      <input class="f-inp" id="li-p" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="l-btn fu3" id="l-btn" onclick="doLogin()">Sign In</button>
+    <div class="l-err" id="l-err">Incorrect email or password.</div>
+    <div class="l-div fu3"><span>Quick demo</span></div>
+    <div class="demo-row fu4">
+      <button class="demo-btn" onclick="demoLogin('employee')">
+        <div class="db-icon">👷</div>
+        <span class="db-label">Employee</span>
+        <span class="db-sub">Field view</span>
+      </button>
+      <button class="demo-btn" onclick="demoLogin('admin')">
+        <div class="db-icon">🏢</div>
+        <span class="db-label">Admin</span>
+        <span class="db-sub">Office view</span>
+      </button>
     </div>
   </div>
 </div>
 
-<div id="appShell">
-  <div class="top-bar">
-    <div class="top-bar-left">
-      <div class="top-bar-logo">🚧</div>
-      <div>
-        <div class="top-bar-title">OK Traffic Control Services</div>
-        <div class="top-bar-sub" id="topSub">EmployeeHub Pro</div>
+<!-- APP -->
+<div id="app">
+  <!-- HEADER -->
+  <header class="app-hdr">
+    <div class="hdr-logo">
+      <img class="hdr-logoimg" src="data:image/png;base64,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" alt="OKTCS">
+      <div class="hdr-stack">
+        <div class="hdr-co">OK Traffic Control Services</div>
+        <div class="hdr-tag">Everything is going to be O-K</div>
       </div>
     </div>
-    <div class="top-bar-right">
-      <div class="role-pill" id="rolePill">👷 Employee</div>
-      <button class="notif-btn" onclick="signOut()">Sign Out</button>
+    <div class="hdr-r">
+      <div class="hdr-usr" onclick="toggleDrop(event)">
+        <div class="hdr-av" id="hAv">PH</div>
+        <div>
+          <div class="hdr-nm" id="hNm">Pamela</div>
+          <div class="hdr-rl" id="hRl">Admin</div>
+        </div>
+        <div class="hdr-drop" id="hdrDrop">
+          <button class="hdr-drop-item" onclick="signOut()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign Out
+          </button>
+        </div>
+      </div>
+      <button class="hdr-so" onclick="signOut()">Sign Out</button>
     </div>
-  </div>
-  <div class="main-content pb-nav" id="main"><div class="loading">Loading…</div></div>
-  <nav class="bottom-nav" id="nav"></nav>
-</div>
+  </header>
 
-<div class="modal-overlay" id="modal">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="modalTitle"></div>
-    <div id="modalBody"></div>
-  </div>
-</div>
+  <div class="app-body">
+    <!-- DESKTOP SIDEBAR (employee) -->
+    <nav class="sidebar hidden" id="eSidebar">
+      <div class="sidebar-nav">
+        <div class="sb-section">Employee</div>
+        <button class="sb-btn active" id="eSB0" onclick="sv('vEH',this,'e')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
+        </button>
+        <button class="sb-btn" onclick="sv('vEG',this,'e')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>GPS Trail
+        </button>
+        <button class="sb-btn" onclick="sv('vEC',this,'e')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>Certifications
+        </button>
+        <button class="sb-btn" onclick="sv('vEM',this,'e')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Messages
+        </button>
+        <button class="sb-btn" id="eSBAlerts" onclick="sv('vEA',this,'e')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alerts
+          <span class="sb-badge">1</span>
+        </button>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sb-user">
+          <div class="sb-av" id="sEAv">MW</div>
+          <div><div class="sb-nm" id="sENm">Marcus</div><div class="sb-rl">Employee</div></div>
+        </div>
+        <button class="f-sub" style="margin-top:10px;padding:10px" onclick="signOut()">Sign Out</button>
+      </div>
+    </nav>
+
+    <!-- DESKTOP SIDEBAR (admin) -->
+    <nav class="sidebar hidden" id="aSidebar">
+      <div class="sidebar-nav">
+        <div class="sb-section">Admin</div>
+        <button class="sb-btn active" id="aSB0" onclick="sv('vAD',this,'a')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Dashboard
+        </button>
+        <button class="sb-btn" onclick="sv('vAT',this,'a')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Team
+        </button>
+        <button class="sb-btn" onclick="sv('vATs',this,'a')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Timesheets
+        </button>
+        <button class="sb-btn" onclick="sv('vAC',this,'a')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Comms
+        </button>
+        <button class="sb-btn" onclick="sv('vAR',this,'a')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reports
+        </button>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sb-user">
+          <div class="sb-av" id="sAAv">PH</div>
+          <div><div class="sb-nm" id="sANm">Pamela</div><div class="sb-rl">Admin</div></div>
+        </div>
+        <button class="f-sub" style="margin-top:10px;padding:10px" onclick="signOut()">Sign Out</button>
+      </div>
+    </nav>
+
+    <!-- CONTENT -->
+    <div class="content-area">
+
+      <!-- EMPLOYEE VIEWS -->
+      <div class="view active" id="vEH">
+        <div class="pg-hdrr fu">
+          <div><div class="pg-t" id="eGreet">Good morning 👋</div><div class="pg-s" id="eDateL">Monday, March 3</div></div>
+          <span class="chip o" id="eChip">No shift</span>
+        </div>
+        <div class="clk-w fu1">
+          <button class="clk-btn ci" id="clkBtn" onclick="toggleClock()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Clock In
+          </button>
+          <div class="clk-inf"><div class="ld" id="ldot"></div><div class="clk-txt" id="clkTxt">Not clocked in today</div></div>
+        </div>
+        <div class="stat-grid fu2">
+          <div class="sc accent"><div class="sc-n" id="sHrs">0.0</div><div class="sc-l">Hours today</div><div class="sc-t up">32.5h this week</div></div>
+          <div class="sc"><div class="sc-n" id="sPings">0</div><div class="sc-l">GPS pings</div><div class="sc-t" id="sGPSlbl" style="color:var(--muted)">Live tracking</div></div>
+        </div>
+        <span class="sec-lbl fu3">Announcements</span>
+        <div class="card fu3" id="eAnnCard">
+          <div class="ann-i"><div class="ann-hd"><div class="ann-dot" style="background:var(--blue)"></div><div class="ann-ti">Safety Reminder</div><div class="ann-dt">Mar 3</div></div><div class="ann-bd">All flaggers must complete updated WSDOT cert renewal before April 1. Check your Certs tab.</div></div>
+          <div class="ann-i"><div class="ann-hd"><div class="ann-dot" style="background:var(--green)"></div><div class="ann-ti">Great Work!</div><div class="ann-dt">Feb 28</div></div><div class="ann-bd">SR-99 corridor job finished ahead of schedule — crew bonus processed this week. Thank you all.</div></div>
+        </div>
+      </div>
+
+      <div class="view" id="vEG">
+        <div class="pg-hdrr fu">
+          <div><div class="pg-t">GPS Trail</div><div class="pg-s">Live location tracking</div></div>
+          <span class="chip k" id="gpsStatusChip">Not tracking</span>
+        </div>
+        <div style="margin:0 16px 10px;border:1.5px solid var(--border);border-radius:14px;overflow:hidden">
+          <div id="gpsMap" style="width:100%;height:340px;background:var(--off)">
+            <div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:8px;color:var(--muted)">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+              <span style="font-size:13px">Clock in to see your trail</span>
+            </div>
+          </div>
+          <div style="background:var(--off);border-top:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:12px;color:var(--muted)" id="gpsCoords">--</div>
+            <div style="font-size:12px;font-weight:700;color:var(--ink);font-family:'DM Mono',monospace" id="gpsPingCount">0 pings</div>
+          </div>
+        </div>
+        <div style="margin:0 16px;overflow:hidden;border:1.5px solid var(--border);border-radius:14px">
+          <div style="padding:10px 14px;background:var(--off);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)">Ping Log</div>
+          <div id="gList" style="max-height:180px;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:4px">
+            <div class="gps-emp" style="font-size:13px;color:var(--muted);padding:8px 0">Clock in to start logging location.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="view" id="vEC">
+        <div class="pg-hdr fu"><div class="pg-t">My Certifications</div><div class="pg-s">Track expiry dates and renewal status</div></div>
+        <div class="alert dg fu1"><div class="ai">🚨</div><div class="ab"><strong>First Aid / CPR expired Feb 1</strong>Contact the office to schedule renewal.</div></div>
+        <div class="alert wn fu2"><div class="ai">⚠️</div><div class="ab"><strong>WSDOT Flagger cert expires in 42 days</strong>Schedule renewal by March 25.</div></div>
+        <div class="card fu3">
+          <div class="cert-r"><div class="cert-ic a">🚦</div><div style="flex:1"><div class="cert-nm">WSDOT Flagger Cert</div><div class="cert-ex">Expires Apr 15, 2025</div></div><span class="chip a">42 days</span></div>
+          <div class="cert-r"><div class="cert-ic g">🦺</div><div style="flex:1"><div class="cert-nm">ATSSA TCP</div><div class="cert-ex">Expires Dec 1, 2025</div></div><span class="chip g">Valid</span></div>
+          <div class="cert-r"><div class="cert-ic r">🚑</div><div style="flex:1"><div class="cert-nm">First Aid / CPR</div><div class="cert-ex">Expired Feb 1, 2025</div></div><span class="chip r">Expired</span></div>
+          <div class="cert-r"><div class="cert-ic g">⚠️</div><div style="flex:1"><div class="cert-nm">Temporary Traffic Control</div><div class="cert-ex">Expires Oct 10, 2025</div></div><span class="chip g">Valid</span></div>
+        </div>
+      </div>
+
+      <div class="view" id="vEM">
+        <div class="pg-hdr fu"><div class="pg-t">Messages</div></div>
+        <div class="card fu1" style="overflow:hidden">
+          <div class="ch-li act"><div class="av" style="background:var(--ink);width:36px;height:36px;font-size:11px;border-radius:8px">OF</div><div><div class="ch-nm">Office</div><div class="ch-pv">See you Monday!</div></div><div class="ch-tm">45m</div></div>
+        </div>
+        <div class="card fu2" style="overflow:hidden">
+          <div class="msg-wrap" id="eMT">
+            <div class="bbl r">Hey Marcus — SR-99 Mon–Wed, 6am–3pm.<div class="bbl-m">Office · 2h ago</div></div>
+            <div class="bbl s">Got it, thanks Pamela!<div class="bbl-m">You · 1h ago</div></div>
+            <div class="bbl r">Reminder to renew your flagger cert before April 1.<div class="bbl-m">Office · 1h ago</div></div>
+            <div class="bbl s">See you Monday!<div class="bbl-m">You · 45m ago</div></div>
+          </div>
+          <div class="msg-cmp">
+            <input class="msg-i" id="eMI" placeholder="Message office…" onkeydown="if(event.key==='Enter')sm('e')">
+            <button class="msg-sb" onclick="sm('e')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="view" id="vEA">
+        <div class="pg-hdr fu"><div class="pg-t">Alerts</div><div class="pg-s">Cert reminders and notices</div></div>
+        <div class="alert dg fu1"><div class="ai">🚨</div><div class="ab"><strong>First Aid / CPR — Expired Feb 1</strong>Contact the office immediately.</div></div>
+        <div class="alert wn fu2"><div class="ai">⚠️</div><div class="ab"><strong>WSDOT Flagger — Expires April 15</strong>42 days remaining. Renew by March 25.</div></div>
+        <div class="alert in fu3"><div class="ai">📅</div><div class="ab"><strong>Schedule posted — Week of March 10</strong>SR-99 Mon–Wed, 6am–3pm.</div></div>
+      </div>
+
+      <!-- ADMIN VIEWS -->
+      <div class="view" id="vAD">
+        <div class="pg-hdrr fu"><div><div class="pg-t">Dashboard</div><div class="pg-s" id="aDL">Monday, March 3</div></div></div>
+        <div class="stat-grid fu1">
+          <div class="sc green"><div class="sc-n" style="color:var(--green)">7</div><div class="sc-l">Clocked in now</div><div class="sc-t up">of 12 employees</div></div>
+          <div class="sc amber"><div class="sc-n" style="color:var(--amber)">3</div><div class="sc-l">Cert alerts</div><div class="sc-t wn">Next 60 days</div></div>
+          <div class="sc accent"><div class="sc-n">$633</div><div class="sc-l">Payroll today</div><div class="sc-t up">3 entries</div></div>
+          <div class="sc"><div class="sc-n">5</div><div class="sc-l">Active crew</div><div class="sc-t" style="color:var(--muted)">on roster</div></div>
+        </div>
+        <span class="sec-lbl fu2">Certification Alerts</span>
+        <div class="card fu2">
+          <div class="cert-r"><div class="cert-ic r">🚑</div><div style="flex:1"><div class="cert-nm">Marcus Webb — First Aid</div><div class="cert-ex">Expired Feb 1, 2025</div></div><span class="chip r">Expired</span></div>
+          <div class="cert-r"><div class="cert-ic a">🚦</div><div style="flex:1"><div class="cert-nm">Marcus Webb — WSDOT</div><div class="cert-ex">Expires Apr 15, 2025</div></div><span class="chip a">42d</span></div>
+          <div class="cert-r"><div class="cert-ic a">🚦</div><div style="flex:1"><div class="cert-nm">Ray Ortiz — ATSSA TCP</div><div class="cert-ex">Expires Apr 22, 2025</div></div><span class="chip a">49d</span></div>
+        </div>
+        <span class="sec-lbl fu3">Live Field Status</span>
+        <div class="card fu3">
+          <div class="emp-r"><div class="av" style="background:#2563EB">MW</div><div style="flex:1"><div class="en">Marcus Webb</div><div class="er">SR-99 · Since 6:02 AM</div></div><span class="chip g">In</span></div>
+          <div class="emp-r"><div class="av" style="background:#7C3AED">RO</div><div style="flex:1"><div class="en">Ray Ortiz</div><div class="er">I-405 · Since 5:48 AM</div></div><span class="chip g">In</span></div>
+          <div class="emp-r"><div class="av" style="background:#0891B2">TL</div><div style="flex:1"><div class="en">Tanya Lowe</div><div class="er">SR-99 · Since 6:00 AM</div></div><span class="chip g">In</span></div>
+          <div class="emp-r"><div class="av" style="background:#9A9A94">JD</div><div style="flex:1"><div class="en">James Dunn</div><div class="er">Off today</div></div><span class="chip k">Out</span></div>
+        </div>
+      </div>
+
+      <div class="view" id="vAT">
+        <div class="pg-hdr fu"><div class="pg-t">Team</div><div class="pg-s">Employees and certification matrix</div></div>
+        <span class="sec-lbl fu1">All Employees</span>
+        <div class="card fu1">
+          <div class="emp-r"><div class="av" style="background:#2563EB">MW</div><div style="flex:1"><div class="en">Marcus Webb</div><div class="er">TCS · $28/hr</div></div><span class="chip g">In</span></div>
+          <div class="emp-r"><div class="av" style="background:#7C3AED">RO</div><div style="flex:1"><div class="en">Ray Ortiz</div><div class="er">Flagger · $22/hr</div></div><span class="chip g">In</span></div>
+          <div class="emp-r"><div class="av" style="background:#0891B2">TL</div><div style="flex:1"><div class="en">Tanya Lowe</div><div class="er">Flagger · $22/hr</div></div><span class="chip g">In</span></div>
+          <div class="emp-r"><div class="av" style="background:#9A9A94">JD</div><div style="flex:1"><div class="en">James Dunn</div><div class="er">TCS · $26/hr</div></div><span class="chip k">Out</span></div>
+          <div class="emp-r"><div class="av" style="background:#BE185D">SK</div><div style="flex:1"><div class="en">Sara Kim</div><div class="er">Flagger · $22/hr</div></div><span class="chip k">Out</span></div>
+        </div>
+        <span class="sec-lbl fu2">Certification Matrix</span>
+        <div class="card fu2">
+          <div class="cert-r"><div class="cert-ic a">🚦</div><div style="flex:1"><div class="cert-nm">Marcus — WSDOT Flagger</div><div class="cert-ex">Apr 15</div></div><span class="chip a">42d</span></div>
+          <div class="cert-r"><div class="cert-ic r">🚑</div><div style="flex:1"><div class="cert-nm">Marcus — First Aid</div><div class="cert-ex">Expired Feb 1</div></div><span class="chip r">Expired</span></div>
+          <div class="cert-r"><div class="cert-ic a">🚦</div><div style="flex:1"><div class="cert-nm">Ray — ATSSA TCP</div><div class="cert-ex">Apr 22</div></div><span class="chip a">49d</span></div>
+          <div class="cert-r"><div class="cert-ic g">🦺</div><div style="flex:1"><div class="cert-nm">Tanya — WSDOT Flagger</div><div class="cert-ex">Dec 1</div></div><span class="chip g">Valid</span></div>
+          <div class="cert-r"><div class="cert-ic g">🏆</div><div style="flex:1"><div class="cert-nm">James — TCS Supervisor</div><div class="cert-ex">Nov 15</div></div><span class="chip g">Valid</span></div>
+        </div>
+      </div>
+
+      <div class="view" id="vATs">
+        <div class="pg-hdrr fu"><div><div class="pg-t">Timesheets</div><div class="pg-s">Week of Mar 3–7</div></div><span class="chip k">3 pending</span></div>
+        <div class="ts-c fu1">
+          <div class="ts-h"><div class="av" style="background:#2563EB;width:34px;height:34px;font-size:11px">MW</div><div><div class="ts-en">Marcus Webb</div><div class="ts-pl">TCS · $28/hr</div></div><div class="ts-dt">Mon Mar 3</div></div>
+          <div class="ts-g">
+            <div class="ts-cell"><div class="ts-cl">Clock In</div><div class="ts-cv">6:02 AM</div></div>
+            <div class="ts-cell"><div class="ts-cl">Clock Out</div><div class="ts-cv">2:45 PM</div></div>
+            <div class="ts-cell"><div class="ts-cl">Hours</div><div class="ts-cv">8.7h</div></div>
+            <div class="ts-cell"><div class="ts-cl">Gross Pay</div><div class="ts-cv">$243.60</div></div>
+          </div>
+          <div class="ts-f"><button class="apr-btn" onclick="approve(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Approve Entry</button></div>
+        </div>
+        <div class="ts-c fu2">
+          <div class="ts-h"><div class="av" style="background:#7C3AED;width:34px;height:34px;font-size:11px">RO</div><div><div class="ts-en">Ray Ortiz</div><div class="ts-pl">Flagger · $22/hr</div></div><div class="ts-dt">Mon Mar 3</div></div>
+          <div class="ts-g">
+            <div class="ts-cell"><div class="ts-cl">Clock In</div><div class="ts-cv">5:48 AM</div></div>
+            <div class="ts-cell"><div class="ts-cl">Clock Out</div><div class="ts-cv">3:00 PM</div></div>
+            <div class="ts-cell"><div class="ts-cl">Hours</div><div class="ts-cv">9.2h</div></div>
+            <div class="ts-cell"><div class="ts-cl">Gross Pay</div><div class="ts-cv">$202.40</div></div>
+          </div>
+          <div class="ts-f"><button class="apr-btn done"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Approved</button></div>
+        </div>
+        <div class="ts-c fu3">
+          <div class="ts-h"><div class="av" style="background:#0891B2;width:34px;height:34px;font-size:11px">TL</div><div><div class="ts-en">Tanya Lowe</div><div class="ts-pl">Flagger · $22/hr</div></div><div class="ts-dt">Mon Mar 3</div></div>
+          <div class="ts-g">
+            <div class="ts-cell"><div class="ts-cl">Clock In</div><div class="ts-cv">6:00 AM</div></div>
+            <div class="ts-cell"><div class="ts-cl">Clock Out</div><div class="ts-cv">2:30 PM</div></div>
+            <div class="ts-cell"><div class="ts-cl">Hours</div><div class="ts-cv">8.5h</div></div>
+            <div class="ts-cell"><div class="ts-cl">Gross Pay</div><div class="ts-cv">$187.00</div></div>
+          </div>
+          <div class="ts-f"><button class="apr-btn" onclick="approve(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Approve Entry</button></div>
+        </div>
+      </div>
+
+      <div class="view" id="vAC">
+        <div class="pg-hdr fu"><div class="pg-t">Comms</div><div class="pg-s">Announcements and direct messages</div></div>
+        <span class="sec-lbl fu1">New Announcement</span>
+        <div class="card fu1" style="overflow:hidden">
+          <div class="cp">
+            <div class="ff"><label class="ff-lbl">Type</label><select class="ff-sel" id="aTyp"><option value="info">📢 Info</option><option value="warn">⚠️ Warning</option><option value="good">🎉 Good News</option></select></div>
+            <div class="ff"><label class="ff-lbl">Title</label><input class="ff-inp" id="aTit" placeholder="Announcement title"></div>
+            <div class="ff"><label class="ff-lbl">Message</label><textarea class="ff-ta" id="aBod" placeholder="Message to all employees…"></textarea></div>
+            <button class="f-sub" onclick="postAnn()">Post to All Employees</button>
+          </div>
+        </div>
+        <span class="sec-lbl fu2">Recent</span>
+        <div class="card fu2" id="aAnnL">
+          <div class="ann-i"><div class="ann-hd"><div class="ann-dot" style="background:var(--blue)"></div><div class="ann-ti">Safety Reminder</div><div class="ann-dt">Mar 3</div></div><div class="ann-bd">All flaggers complete WSDOT cert renewal before April 1.</div></div>
+          <div class="ann-i"><div class="ann-hd"><div class="ann-dot" style="background:var(--green)"></div><div class="ann-ti">Great Work!</div><div class="ann-dt">Feb 28</div></div><div class="ann-bd">SR-99 finished ahead of schedule — crew bonus processed.</div></div>
+        </div>
+        <span class="sec-lbl fu3">Direct Messages</span>
+        <div class="card fu3" style="overflow:hidden">
+          <div class="ch-li act" onclick="openThread(this,'Marcus Webb')"><div class="av" style="background:#2563EB;width:36px;height:36px;font-size:11px">MW</div><div style="min-width:0"><div class="ch-nm">Marcus Webb</div><div class="ch-pv">See you Monday!</div></div><div class="ch-tm">45m</div></div>
+          <div class="ch-li" onclick="openThread(this,'Ray Ortiz')"><div class="av" style="background:#7C3AED;width:36px;height:36px;font-size:11px">RO</div><div style="min-width:0"><div class="ch-nm">Ray Ortiz</div><div class="ch-pv">What time does I-405 start?</div></div><div class="ch-tm">2h</div><div class="unrd"></div></div>
+          <div class="ch-li" onclick="openThread(this,'Tanya Lowe')"><div class="av" style="background:#0891B2;width:36px;height:36px;font-size:11px">TL</div><div style="min-width:0"><div class="ch-nm">Tanya Lowe</div><div class="ch-pv">Thanks for the update!</div></div><div class="ch-tm">Yesterday</div></div>
+        </div>
+        <div class="card fu4" style="overflow:hidden">
+          <div style="padding:13px 16px 0;font-size:13px;font-weight:700;color:var(--ink)" id="aChatN">Marcus Webb</div>
+          <div class="msg-wrap" id="aMT">
+            <div class="bbl s">SR-99 Mon–Wed, 6am–3pm.<div class="bbl-m">You · 2h ago</div></div>
+            <div class="bbl r">Got it, thanks!<div class="bbl-m">Marcus · 1h ago</div></div>
+            <div class="bbl s">Reminder — renew flagger cert before April 1.<div class="bbl-m">You · 1h ago</div></div>
+            <div class="bbl r">See you Monday!<div class="bbl-m">Marcus · 45m ago</div></div>
+          </div>
+          <div class="msg-cmp">
+            <input class="msg-i" id="aMI" placeholder="Message…" onkeydown="if(event.key==='Enter')sm('a')">
+            <button class="msg-sb" onclick="sm('a')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="view" id="vAR">
+        <div class="pg-hdr fu"><div class="pg-t">Reports</div><div class="pg-s">Export CSV files for bookkeeping</div></div>
+        <div class="card fu1" style="overflow:hidden">
+          <div class="date-strip">
+            <input type="date" class="d-inp" id="rF" value="2025-03-01">
+            <span class="d-sep">→</span>
+            <input type="date" class="d-inp" id="rT" value="2025-03-07">
+          </div>
+          <button class="rpt-btn" onclick="dlCSV('payroll')"><div class="rpt-ic">💰</div><div><div class="rpt-nm">Payroll / Timesheet</div><div class="rpt-ds">Employee ID · Pay rate · In/Out · Hours · Gross pay</div></div><div class="rpt-ar">↓</div></button>
+          <button class="rpt-btn" onclick="dlCSV('gps')"><div class="rpt-ic">📍</div><div><div class="rpt-nm">GPS Breadcrumb Log</div><div class="rpt-ds">Employee · Timestamp · Lat · Lng per ping</div></div><div class="rpt-ar">↓</div></button>
+          <button class="rpt-btn" onclick="dlCSV('certs')"><div class="rpt-ic">📋</div><div><div class="rpt-nm">Certifications</div><div class="rpt-ds">Employee · Cert name · Issue / Expiry · Status</div></div><div class="rpt-ar">↓</div></button>
+          <button class="rpt-btn" onclick="dlCSV('dir')"><div class="rpt-ic">👥</div><div><div class="rpt-nm">Employee Directory</div><div class="rpt-ds">Name · Email · Position · Pay rate · Status</div></div><div class="rpt-ar">↓</div></button>
+        </div>
+      </div>
+
+    </div><!-- /content-area -->
+  </div><!-- /app-body -->
+
+  <!-- MOBILE BOTTOM NAV (employee) -->
+  <nav class="btm-nav hidden" id="eNav">
+    <button class="nb active" id="eN0" onclick="sv('vEH',this,'e')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nb-lbl">Home</span></button>
+    <button class="nb" onclick="sv('vEG',this,'e')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg><span class="nb-lbl">GPS</span></button>
+    <button class="nb" onclick="sv('vEC',this,'e')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg><span class="nb-lbl">Certs</span></button>
+    <button class="nb" onclick="sv('vEM',this,'e')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nb-lbl">Messages</span></button>
+    <button class="nb" onclick="sv('vEA',this,'e')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="nb-lbl">Alerts</span><div class="n-badge">1</div></button>
+  </nav>
+  <!-- MOBILE BOTTOM NAV (admin) -->
+  <nav class="btm-nav hidden" id="aN">
+    <button class="nb active" id="aN0" onclick="sv('vAD',this,'a')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg><span class="nb-lbl">Dashboard</span></button>
+    <button class="nb" onclick="sv('vAT',this,'a')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="nb-lbl">Team</span></button>
+    <button class="nb" onclick="sv('vATs',this,'a')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="nb-lbl">Timesheets</span></button>
+    <button class="nb" onclick="sv('vAC',this,'a')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nb-lbl">Comms</span></button>
+    <button class="nb" onclick="sv('vAR',this,'a')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span class="nb-lbl">Reports</span></button>
+  </nav>
+
+</div><!-- /app -->
+
 
 <script>
-const SUPABASE_URL = 'https://bwrbbwdztgcxwfcxqyzo.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_fXTqHg3-PZGeySPBB710VA_GcOdaRtg';
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+const USERS={
+  'marcus@oktc.com':{name:'Marcus',last:'Webb',init:'MW',role:'employee',color:'#2563EB'},
+  'pamela@oktc.com':{name:'Pamela',last:'Hardy',init:'PH',role:'admin',color:'#E8550A'}
+};
+const PWD='demo123';
+let user=null,clocked=false,cinTime=null,gpsInt=null,clkInt=null,pings=[];
 
-let role = 'employee';
-let currentUser = null;
-let currentEmp = null;
-let isClockedIn = false;
-let clockInTime = null;
-let activeTimeEntryId = null;
-let gpsTrail = [];
-let gpsInterval = null;
-let clockTimer = null;
-let activeChat = null;
-let allEmployees = [];
-let msgSubscription = null;
-
-const $ = id => document.getElementById(id);
-const fmtTime = d => d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-const fmtDate = d => d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
-const daysUntil = d => Math.ceil((new Date(d)-new Date())/86400000);
-const initials = e => ((e.first_name||'?')[0]+(e.last_name||'?')[0]).toUpperCase();
-const fullName = e => (e.first_name||'')+ ' '+(e.last_name||'');
-const getEmp = id => allEmployees.find(e=>e.id===id);
-
-function certBadge(days){
-  if(days<0)  return{cls:'badge-red',  label:'Expired'};
-  if(days<=14) return{cls:'badge-red',  label:days+'d'};
-  if(days<=60) return{cls:'badge-amber',label:days+'d'};
-  return{cls:'badge-green',label:'Valid'};
+function toggleDrop(e){
+  e.stopPropagation();
+  const d=document.getElementById('hdrDrop');
+  d.classList.toggle('open');
 }
-function certBarColor(days){
-  if(days<=0) return'#ef4444';
-  if(days<=30)return'#ef4444';
-  if(days<=60)return'#f59e0b';
-  return'#10b981';
-}
-function hrsCalc(i,o){
-  const[ih,im]=i.split(':').map(Number),[oh,om]=o.split(':').map(Number);
-  return((oh*60+om-ih*60-im)/60).toFixed(2);
+document.addEventListener('click',function(){
+  const d=document.getElementById('hdrDrop');
+  if(d) d.classList.remove('open');
+});
+
+function doLogin(){
+  const e=document.getElementById('li-e').value.trim().toLowerCase();
+  const p=document.getElementById('li-p').value;
+  const err=document.getElementById('l-err');
+  err.style.display='none';
+  if(USERS[e]&&p===PWD){
+    const btn=document.getElementById('l-btn');
+    btn.classList.add('loading');
+    setTimeout(function(){btn.classList.remove('loading');boot(USERS[e],e);},550);
+  }else{err.style.display='block';}
 }
 
-function fillDemo(email, pass){
-  $('loginEmail').value = email;
-  $('loginPass').value  = pass;
+function demoLogin(r){
+  const email=r==='admin'?'pamela@oktc.com':'marcus@oktc.com';
+  const eInp=document.getElementById('li-e');
+  const pInp=document.getElementById('li-p');
+  document.getElementById('l-err').style.display='none';
+  eInp.value='';pInp.value='';
+  eInp.focus();
+  let i=0;
+  const typeEmail=setInterval(function(){
+    eInp.value+=email[i++];
+    if(i>=email.length){
+      clearInterval(typeEmail);
+      setTimeout(function(){
+        pInp.focus();
+        let j=0;
+        const typePwd=setInterval(function(){
+          pInp.value+=PWD[j++];
+          if(j>=PWD.length){clearInterval(typePwd);setTimeout(doLogin,400);}
+        },80);
+      },300);
+    }
+  },55);
 }
 
-async function doLogin(){
-  const email=$('loginEmail').value.trim();
-  const pass=$('loginPass').value.trim();
-  if(!email||!pass){$('loginError').textContent='Enter email and password.';return;}
-  const btn=$('loginBtn');
-  btn.innerHTML='<span class="spinner"></span>';
-  btn.disabled=true;
-  $('loginError').textContent='';
-  const{data,error}=await db.auth.signInWithPassword({email,password:pass});
-  btn.innerHTML='Sign In →'; btn.disabled=false;
-  if(error){$('loginError').textContent=error.message;return;}
-  currentUser=data.user;
-  await loadCurrentEmp(email);
-  $('loginScreen').style.display='none';
-  $('appShell').style.display='flex';
-  await initApp();
-}
-
-async function loadCurrentEmp(email){
-  const{data}=await db.from('employees').select('*').eq('email',email).maybeSingle();
-  currentEmp=data;
-  role=data?.department==='Office'?'admin':'employee';
-}
-
-async function signOut(){
-  stopGPS();
-  if(clockTimer)clearInterval(clockTimer);
-  if(msgSubscription)db.removeChannel(msgSubscription);
-  clockTimer=null; isClockedIn=false; clockInTime=null; gpsTrail=[]; activeChat=null;
-  await db.auth.signOut();
-  $('appShell').style.display='none';
-  $('loginScreen').style.display='flex';
-  $('loginEmail').value=''; $('loginPass').value='';
-}
-
-async function initApp(){
-  $('rolePill').textContent=role==='admin'?'🏢 Admin':'👷 Employee';
-  $('topSub').textContent=role==='admin'?'Admin Dashboard':'Field App';
-  allEmployees=await loadEmployees();
-  role==='admin'?buildAdminNav():buildEmpNav();
-  showSection('home');
-}
-
-function buildEmpNav(){
-  $('nav').innerHTML=`
-    <button class="nav-item" data-s="home"    onclick="showSection('home')">   <span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
-    <button class="nav-item" data-s="gps"     onclick="showSection('gps')">    <span class="nav-icon">📍</span><span class="nav-label">My Trail</span></button>
-    <button class="nav-item" data-s="mycerts" onclick="showSection('mycerts')"><span class="nav-icon">📋</span><span class="nav-label">My Certs</span></button>
-    <button class="nav-item" data-s="chat"    onclick="showSection('chat')">   <span class="nav-icon">💬</span><span class="nav-label">Chat</span></button>
-    <button class="nav-item" data-s="alerts"  onclick="showSection('alerts')"> <span class="nav-icon">🔔</span><span class="nav-label">Alerts</span></button>`;
-}
-function buildAdminNav(){
-  $('nav').innerHTML=`
-    <button class="nav-item" data-s="home"       onclick="showSection('home')">      <span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></button>
-    <button class="nav-item" data-s="team"       onclick="showSection('team')">      <span class="nav-icon">👥</span><span class="nav-label">Team</span></button>
-    <button class="nav-item" data-s="timesheets" onclick="showSection('timesheets')"><span class="nav-icon">⏰</span><span class="nav-label">Time</span></button>
-    <button class="nav-item" data-s="chat"       onclick="showSection('chat')">      <span class="nav-icon">💬</span><span class="nav-label">Chat</span></button>
-    <button class="nav-item" data-s="reports"    onclick="showSection('reports')">   <span class="nav-icon">📁</span><span class="nav-label">Reports</span></button>`;
-}
-
-function showSection(s){
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.s===s));
-  role==='admin'?renderAdmin(s):renderEmp(s);
-}
-
-async function loadEmployees(){
-  const{data}=await db.from('employees').select('*').order('last_name');
-  return data||[];
-}
-async function loadCerts(empId=null){
-  let q=db.from('certifications').select('*').order('expiry_date');
-  if(empId)q=q.eq('employee_id',empId);
-  const{data}=await q; return data||[];
-}
-async function loadTimeEntries(){
-  const{data}=await db.from('time_entries')
-    .select('*, employees(first_name,last_name,hourly_rate,department,position)')
-    .order('date',{ascending:false}).limit(50);
-  return data||[];
-}
-async function loadAnnouncements(){
-  const{data}=await db.from('announcements').select('*').order('created_at',{ascending:false});
-  return data||[];
-}
-async function loadMessages(otherId){
-  const myId=currentEmp?.id; if(!myId)return[];
-  const{data}=await db.from('messages').select('*')
-    .or(`and(sender_id.eq.${myId},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${myId})`)
-    .order('created_at');
-  return data||[];
-}
-
-async function renderEmp(s){
-  if(s==='home')    await renderEmpHome();
-  else if(s==='gps')     await renderEmpGPS();
-  else if(s==='mycerts') await renderEmpCerts();
-  else if(s==='chat')    await renderChat();
-  else if(s==='alerts')  await renderAlerts();
-}
-
-async function renderEmpHome(){
-  const anns=await loadAnnouncements();
-  const myCerts=currentEmp?await loadCerts(currentEmp.id):[];
-  const urgent=myCerts.filter(c=>daysUntil(c.expiry_date)<=60);
-  const now=new Date();
-  $('main').innerHTML=`
-    ${urgent.length?`<div class="alert-bar">⚠️ ${urgent.length} cert(s) expiring soon <button class="btn btn-sm btn-amber" onclick="showSection('mycerts')">View</button></div>`:''}
-    <div class="clock-card">
-      <div class="clock-time" id="clk">${fmtTime(now)}</div>
-      <div class="clock-date">${fmtDate(now)}</div>
-      <div class="clock-status ${isClockedIn?'clocked-in':'clocked-out'}">
-        ${isClockedIn?'🟢 Clocked In — '+fmtTime(clockInTime):'⚫ Clocked Out'}
-      </div>
-      <button class="clock-btn ${isClockedIn?'btn-clock-out':'btn-clock-in'}" onclick="toggleClock()">
-        ${isClockedIn?'🔴 Clock Out':'🟢 Clock In'}
-      </button>
-      <div class="gps-indicator">
-        ${isClockedIn?'<span class="gps-dot"></span> GPS logging every 10 min':'GPS logging paused'}
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Today's Summary</div>
-      <div class="stats-row">
-        <div class="stat-box"><div class="stat-num">${isClockedIn?((new Date()-clockInTime)/3600000).toFixed(1):'—'}</div><div class="stat-lbl">Hours Today</div></div>
-        <div class="stat-box"><div class="stat-num">${gpsTrail.length}</div><div class="stat-lbl">GPS Pings</div></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">📢 Announcements</div>
-      ${anns.slice(0,3).map(a=>`
-        <div class="ann ann-${a.type}">
-          <div class="ann-title">${a.title}</div>
-          <div class="ann-body">${a.body}</div>
-          <div class="ann-meta">${a.author} · ${a.created_at?.slice(0,10)}</div>
-        </div>`).join('')||'<p style="color:var(--muted);font-size:0.875rem;">No announcements.</p>'}
-    </div>`;
-  startClock();
-}
-
-function startClock(){
-  if(clockTimer)clearInterval(clockTimer);
-  clockTimer=setInterval(()=>{const el=$('clk');if(el)el.textContent=fmtTime(new Date());},1000);
-}
-
-async function toggleClock(){
-  if(!currentEmp){alert('Employee record not found. Contact your admin.');return;}
-  if(!isClockedIn){
-    const now=new Date();
-    const{data,error}=await db.from('time_entries').insert([{
-      employee_id:currentEmp.id,
-      date:now.toISOString().split('T')[0],
-      clock_in:now.toTimeString().slice(0,5),
-      status:'Pending'
-    }]).select().single();
-    if(error){alert('Clock-in failed: '+error.message);return;}
-    activeTimeEntryId=data.id;
-    isClockedIn=true; clockInTime=now; gpsTrail=[];
-    startGPS();
-  } else {
-    const now=new Date();
-    const out=now.toTimeString().slice(0,5);
-    const h=((now-clockInTime)/3600000).toFixed(2);
-    const{error}=await db.from('time_entries').update({clock_out:out,total_hours:h,status:'Pending'}).eq('id',activeTimeEntryId);
-    if(error){alert('Clock-out failed: '+error.message);return;}
-    stopGPS();
-    alert(`⏹ Clocked out.\nHours: ${h}\nGPS pings saved: ${gpsTrail.length}`);
-    isClockedIn=false; clockInTime=null; activeTimeEntryId=null; gpsTrail=[];
+function boot(u,email){
+  user={name:u.name,last:u.last,init:u.init,role:u.role,color:u.color,email:email};
+  const av=document.getElementById('hAv');
+  av.textContent=u.init; av.style.background=u.color;
+  document.getElementById('hNm').textContent=u.name;
+  document.getElementById('hRl').textContent=u.role==='admin'?'Admin':'Employee';
+  if(u.role==='admin'){
+    const sav=document.getElementById('sAAv'); sav.textContent=u.init; sav.style.background=u.color;
+    document.getElementById('sANm').textContent=u.name;
+  }else{
+    const sav=document.getElementById('sEAv'); sav.textContent=u.init; sav.style.background=u.color;
+    document.getElementById('sENm').textContent=u.name;
   }
-  await renderEmpHome();
+  const d=new Date();
+  const ds=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  const hr=d.getHours();
+  const g=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+  document.getElementById('eGreet').textContent=g+', '+u.name+' \U0001F44B';
+  document.getElementById('eDateL').textContent=ds;
+  document.getElementById('aDL').textContent=ds;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');v.style.display='none';});
+  if(u.role==='admin'){
+    document.getElementById('aN').classList.remove('hidden');
+    document.getElementById('eNav').classList.add('hidden');
+    document.getElementById('aSidebar').classList.remove('hidden');
+    document.getElementById('eSidebar').classList.add('hidden');
+    act('vAD');
+    document.getElementById('aN0').classList.add('active');
+    document.getElementById('aSB0').classList.add('active');
+  }else{
+    document.getElementById('eNav').classList.remove('hidden');
+    document.getElementById('aN').classList.add('hidden');
+    document.getElementById('eSidebar').classList.remove('hidden');
+    document.getElementById('aSidebar').classList.add('hidden');
+    act('vEH');
+    document.getElementById('eN0').classList.add('active');
+    document.getElementById('eSB0').classList.add('active');
+  }
 }
+
+function signOut(){
+  user=null; clocked=false;
+  stopGPS(); clearInterval(clkInt); pings=[];
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('li-e').value='';
+  document.getElementById('li-p').value='';
+  const b=document.getElementById('clkBtn');
+  b.className='clk-btn ci';
+  b.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Clock In';
+  document.getElementById('ldot').className='ld';
+  document.getElementById('clkTxt').textContent='Not clocked in today';
+  document.getElementById('sHrs').textContent='0.0';
+  document.getElementById('sPings').textContent='0';
+  resetMap();
+  document.getElementById('eChip').textContent='No shift';
+  document.getElementById('eChip').className='chip o';
+  document.getElementById('sGPSlbl').textContent='Every 10 min';
+  document.getElementById('sGPSlbl').style.color='var(--muted)';
+}
+
+function sv(id,btn,role){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');v.style.display='none';});
+  if(role==='a'){
+    document.getElementById('aN').querySelectorAll('.nb').forEach(function(b){b.classList.remove('active');});
+    document.getElementById('aSidebar').querySelectorAll('.sb-btn').forEach(function(b){b.classList.remove('active');});
+  }else{
+    document.getElementById('eNav').querySelectorAll('.nb').forEach(function(b){b.classList.remove('active');});
+    document.getElementById('eSidebar').querySelectorAll('.sb-btn').forEach(function(b){b.classList.remove('active');});
+  }
+  if(btn) btn.classList.add('active');
+  act(id);
+}
+
+function act(id){
+  const el=document.getElementById(id);
+  if(el){
+    el.style.display='block';el.classList.add('active');
+    if(id==='vEG' && gpsMap){
+      setTimeout(function(){gpsMap.invalidateSize();},50);
+    }
+  }
+}
+
+function toggleClock(){
+  const btn=document.getElementById('clkBtn');
+  const dot=document.getElementById('ldot');
+  const txt=document.getElementById('clkTxt');
+  const chip=document.getElementById('eChip');
+  if(!clocked){
+    clocked=true; cinTime=new Date();
+    btn.className='clk-btn co';
+    btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Clock Out';
+    dot.classList.add('on'); chip.textContent='On shift'; chip.className='chip g';
+    document.getElementById('sGPSlbl').textContent='Live - tracking';
+    document.getElementById('sGPSlbl').style.color='var(--green)';
+    startGPS();
+    clkInt=setInterval(updClk,5000); updClk();
+  }else{
+    clocked=false; stopGPS(); clearInterval(clkInt);
+    const h=((new Date()-cinTime)/3600000).toFixed(1);
+    const out=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    btn.className='clk-btn ci';
+    btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Clock In';
+    dot.classList.remove('on');
+    txt.innerHTML='Clocked out '+out+' &middot; <strong>'+h+'h total</strong>';
+    chip.textContent='Shift ended'; chip.className='chip k';
+    document.getElementById('sHrs').textContent=h;
+    document.getElementById('sGPSlbl').textContent='Stopped';
+    document.getElementById('sGPSlbl').style.color='var(--muted)';
+  }
+}
+
+function updClk(){
+  if(!clocked||!cinTime) return;
+  const h=((new Date()-cinTime)/3600000).toFixed(1);
+  document.getElementById('sHrs').textContent=h;
+  document.getElementById('clkTxt').innerHTML='<strong>Clocked in</strong> since '+cinTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' &middot; '+h+'h';
+}
+
+let watchId=null;
+let lastLat=null,lastLng=null;
 
 function startGPS(){
-  const logPing=async()=>{
-    const save=async(lat,lng)=>{
-      gpsTrail.push({time:fmtTime(new Date()),lat,lng});
-      if(activeTimeEntryId){
-        await db.from('gps_pings').insert([{
-          employee_id:currentEmp.id,
-          time_entry_id:activeTimeEntryId,
-          pinged_at:new Date().toISOString(),
-          latitude:parseFloat(lat),
-          longitude:parseFloat(lng)
-        }]);
+  document.getElementById('sGPSlbl').textContent='Live - tracking';
+  document.getElementById('sGPSlbl').style.color='var(--green)';
+  if(navigator.geolocation){
+    // Log immediately, then watch for changes
+    navigator.geolocation.getCurrentPosition(
+      function(p){saveGPS(p.coords.latitude,p.coords.longitude);},
+      function(){simulateGPS();}
+    );
+    watchId=navigator.geolocation.watchPosition(
+      function(p){
+        const lat=p.coords.latitude, lng=p.coords.longitude;
+        // Only log if moved more than ~5 meters to avoid duplicates
+        if(lastLat===null || dist(lastLat,lastLng,lat,lng) > 0.00005){
+          saveGPS(lat,lng);
+        }
+      },
+      function(){simulateGPS();},
+      {enableHighAccuracy:true, maximumAge:5000, timeout:10000}
+    );
+  }else{
+    simulateGPS();
+  }
+}
+
+function stopGPS(){
+  if(watchId!==null && navigator.geolocation){
+    navigator.geolocation.clearWatch(watchId);
+    watchId=null;
+  }
+  clearInterval(gpsInt);
+  gpsInt=null;
+}
+
+function simulateGPS(){
+  // Fallback: simulate movement around Tacoma WA every 8 seconds
+  if(!gpsInt){
+    const base={lat:47.2529,lng:-122.4443};
+    gpsInt=setInterval(function(){
+      if(!clocked){stopGPS();return;}
+      const lat=base.lat+(Math.random()-.5)*.004;
+      const lng=base.lng+(Math.random()-.5)*.004;
+      saveGPS(lat,lng);
+    },8000);
+    // Log one immediately
+    saveGPS(base.lat+(Math.random()-.5)*.004, base.lng+(Math.random()-.5)*.004);
+  }
+}
+
+function dist(lat1,lng1,lat2,lng2){
+  return Math.sqrt(Math.pow(lat2-lat1,2)+Math.pow(lng2-lng1,2));
+}
+
+function saveGPS(lat,lng){
+  lastLat=lat; lastLng=lng;
+  const now=new Date();
+  pings.push({time:now,lat:lat.toFixed(5),lng:lng.toFixed(5)});
+  document.getElementById('sPings').textContent=pings.length;
+  renderGPS();
+}
+
+function logGPS(){} // kept for compatibility
+
+let gpsMap=null, gpsPolyline=null, gpsMarker=null, gpsCircle=null;
+
+function initMap(lat,lng){
+  if(gpsMap) return;
+  const mapEl=document.getElementById('gpsMap');
+  mapEl.innerHTML=''; // clear placeholder
+  gpsMap=L.map('gpsMap',{zoomControl:true,attributionControl:false}).setView([lat,lng],17);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,attribution:''
+  }).addTo(gpsMap);
+  // Add subtle attribution
+  L.control.attribution({prefix:false}).addAttribution('&copy; OpenStreetMap').addTo(gpsMap);
+  gpsPolyline=L.polyline([],{color:'#E8550A',weight:4,opacity:.85,dashArray:'8,4'}).addTo(gpsMap);
+  // Current position circle
+  gpsCircle=L.circleMarker([lat,lng],{
+    radius:10,fillColor:'#E8550A',fillOpacity:.25,color:'#E8550A',weight:2
+  }).addTo(gpsMap);
+  // Current position dot
+  gpsMarker=L.circleMarker([lat,lng],{
+    radius:6,fillColor:'#E8550A',fillOpacity:1,color:'#fff',weight:2
+  }).addTo(gpsMap);
+}
+
+function renderGPS(){
+  if(pings.length===0) return;
+  const latest=pings[pings.length-1];
+  const lat=parseFloat(latest.lat), lng=parseFloat(latest.lng);
+  // Init or update map
+  if(!gpsMap){
+    initMap(lat,lng);
+  }else{
+    gpsMap.invalidateSize();
+  }
+  // Update polyline
+  const latlngs=pings.map(function(p){return[parseFloat(p.lat),parseFloat(p.lng)];});
+  gpsPolyline.setLatLngs(latlngs);
+  // Add dot markers for older pings
+  if(pings.length>1){
+    const prev=pings[pings.length-2];
+    L.circleMarker([parseFloat(prev.lat),parseFloat(prev.lng)],{
+      radius:4,fillColor:'#111110',fillOpacity:.5,color:'#fff',weight:1.5
+    }).addTo(gpsMap);
+  }
+  // Move current marker
+  gpsMarker.setLatLng([lat,lng]);
+  gpsCircle.setLatLng([lat,lng]);
+  // Pan map to current position
+  gpsMap.panTo([lat,lng],{animate:true});
+  // Update coords display
+  document.getElementById('gpsCoords').textContent=lat.toFixed(5)+', '+lng.toFixed(5);
+  document.getElementById('gpsPingCount').textContent=pings.length+' ping'+(pings.length===1?'':'s');
+  // Update status chip
+  const chip=document.getElementById('gpsStatusChip');
+  if(chip){chip.textContent='Live';chip.className='chip g';}
+  // Update ping log
+  document.getElementById('gList').innerHTML=[...pings].reverse().map(function(p,i){
+    const isLatest=i===0;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:1px solid var(--border)">'
+      +'<div style="width:7px;height:7px;border-radius:50%;background:'+(isLatest?'var(--orange)':'var(--muted)')+';flex-shrink:0"></div>'
+      +'<span style="font-size:12px;font-weight:'+(isLatest?'700':'400')+';color:var(--ink);font-family:DM Mono,monospace">'+p.time.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</span>'
+      +'<span style="font-size:11px;color:var(--muted);font-family:DM Mono,monospace">'+p.lat+', '+p.lng+'</span>'
+      +(isLatest?'<span style="margin-left:auto;font-size:10px;font-weight:700;color:var(--orange)">NOW</span>':'')
+      +'</div>';
+  }).join('');
+}
+
+function resetMap(){
+  if(gpsMap){gpsMap.remove();gpsMap=null;gpsPolyline=null;gpsMarker=null;gpsCircle=null;}
+  const chip=document.getElementById('gpsStatusChip');
+  if(chip){chip.textContent='Not tracking';chip.className='chip k';}
+  document.getElementById('gpsCoords').textContent='--';
+  document.getElementById('gpsPingCount').textContent='0 pings';
+  document.getElementById('gList').innerHTML='<div class="gps-emp" style="font-size:13px;color:var(--muted);padding:8px 0">Clock in to start logging location.</div>';
+  const mapEl=document.getElementById('gpsMap');
+  if(mapEl) mapEl.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:8px;color:var(--muted)"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg><span style="font-size:13px">Clock in to see your trail</span></div>';
+}
+
+function sm(w){
+  const inp=document.getElementById(w==='e'?'eMI':'aMI');
+  const thr=document.getElementById(w==='e'?'eMT':'aMT');
+  const txt=inp.value.trim(); if(!txt) return;
+  const b=document.createElement('div');
+  b.className='bbl s';
+  b.innerHTML=txt+'<div class="bbl-m">You &middot; just now</div>';
+  thr.appendChild(b); thr.scrollTop=thr.scrollHeight; inp.value='';
+}
+
+function openThread(el,name){
+  document.getElementById('aChatN').textContent=name;
+  document.querySelectorAll('.ch-li').forEach(function(c){c.classList.remove('act');});
+  el.classList.add('act');
+  el.querySelectorAll('.unrd').forEach(function(d){d.remove();});
+}
+
+function postAnn(){
+  const type=document.getElementById('aTyp').value;
+  const title=document.getElementById('aTit').value.trim();
+  const body=document.getElementById('aBod').value.trim();
+  if(!title||!body) return;
+  const cols={info:'var(--blue)',warn:'var(--amber)',good:'var(--green)'};
+  const dt=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const html='<div class="ann-i"><div class="ann-hd"><div class="ann-dot" style="background:'+cols[type]+'"></div><div class="ann-ti">'+title+'</div><div class="ann-dt">'+dt+'</div></div><div class="ann-bd">'+body+'</div></div>';
+  document.getElementById('aAnnL').insertAdjacentHTML('afterbegin',html);
+  document.getElementById('eAnnCard').insertAdjacentHTML('afterbegin',html);
+  document.getElementById('aTit').value=''; document.getElementById('aBod').value='';
+}
+
+function approve(btn){
+  btn.className='apr-btn done';
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Approved';
+  btn.onclick=null;
+}
+
+function dlCSV(t){
+  try{
+    const now=new Date();
+    const d=now.getFullYear()+'-'+(now.getMonth()+1)+'-'+now.getDate();
+    let rows,fn;
+    if(t==='payroll'){
+      rows=[
+        ['Employee ID','First Name','Last Name','Pay Rate','Date','Clock In','Clock Out','Hours','Gross Pay'],
+        ['EMP001','Marcus','Webb','$28.00','3/3/2025','6:02 AM','2:45 PM','8.7','$243.60'],
+        ['EMP002','Ray','Ortiz','$22.00','3/3/2025','5:48 AM','3:00 PM','9.2','$202.40'],
+        ['EMP003','Tanya','Lowe','$22.00','3/3/2025','6:00 AM','2:30 PM','8.5','$187.00'],
+        ['EMP004','James','Dunn','$26.00','3/3/2025','Off','-','0','$0.00']
+      ];
+      fn='OKTCS_Payroll_'+d+'.csv';
+    }else if(t==='gps'){
+      rows=[['Employee ID','Name','Date','Time','Latitude','Longitude']];
+      if(pings.length){
+        pings.forEach(function(p){
+          const nm=user?user.name+' '+user.last:'Employee';
+          rows.push(['EMP001',nm,p.time.toLocaleDateString(),p.time.toLocaleTimeString(),p.lat,p.lng]);
+        });
+      }else{
+        rows.push(['EMP001','Marcus Webb','3/3/2025','6:02 AM','47.25290','-122.44430']);
+        rows.push(['EMP001','Marcus Webb','3/3/2025','6:12 AM','47.25310','-122.44418']);
       }
-    };
-    if(navigator.geolocation){
-      navigator.geolocation.getCurrentPosition(
-        pos=>save(pos.coords.latitude.toFixed(5),pos.coords.longitude.toFixed(5)),
-        ()=>{
-          const last=gpsTrail[gpsTrail.length-1]||{lat:47.1532,lng:-122.4783};
-          save((parseFloat(last.lat)+(Math.random()-0.5)*0.003).toFixed(5),(parseFloat(last.lng)+(Math.random()-0.5)*0.003).toFixed(5));
-        },{enableHighAccuracy:true,timeout:8000}
-      );
+      fn='OKTCS_GPS_'+d+'.csv';
+    }else if(t==='certs'){
+      rows=[
+        ['Employee ID','Name','Certification','Issue Date','Expiry Date','Status'],
+        ['EMP001','Marcus Webb','WSDOT Flagger','4/15/2023','4/15/2025','Expiring Soon'],
+        ['EMP001','Marcus Webb','First Aid / CPR','2/1/2023','2/1/2025','Expired'],
+        ['EMP002','Ray Ortiz','ATSSA TCP','4/22/2023','4/22/2025','Expiring Soon'],
+        ['EMP003','Tanya Lowe','WSDOT Flagger','12/1/2023','12/1/2025','Valid'],
+        ['EMP004','James Dunn','TCS Supervisor','11/15/2023','11/15/2025','Valid']
+      ];
+      fn='OKTCS_Certifications_'+d+'.csv';
+    }else{
+      rows=[
+        ['Employee ID','First Name','Last Name','Email','Position','Pay Rate','Status'],
+        ['EMP001','Marcus','Webb','marcus@oktc.com','TCS','$28.00','Active'],
+        ['EMP002','Ray','Ortiz','ray@oktc.com','Flagger','$22.00','Active'],
+        ['EMP003','Tanya','Lowe','tanya@oktc.com','Flagger','$22.00','Active'],
+        ['EMP004','James','Dunn','james@oktc.com','TCS','$26.00','Active'],
+        ['EMP005','Sara','Kim','sara@oktc.com','Flagger','$22.00','Active']
+      ];
+      fn='OKTCS_Directory_'+d+'.csv';
     }
-  };
-  logPing();
-  gpsInterval=setInterval(logPing,10*60*1000);
-}
-function stopGPS(){if(gpsInterval)clearInterval(gpsInterval);gpsInterval=null;}
-
-async function renderEmpGPS(){
-  let trail=gpsTrail;
-  if(trail.length===0&&currentEmp){
-    const{data}=await db.from('gps_pings').select('*').eq('employee_id',currentEmp.id).order('pinged_at',{ascending:false}).limit(20);
-    trail=(data||[]).reverse().map(p=>({time:new Date(p.pinged_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),lat:p.latitude,lng:p.longitude}));
-  }
-  if(trail.length===0)trail=genDemoTrail();
-  $('main').innerHTML=`
-    <div class="card">
-      <div class="card-title">My GPS Trail <span class="badge ${isClockedIn?'badge-green':'badge-gray'}">${isClockedIn?'Live':'Last Shift'}</span></div>
-      <div class="mini-map" id="empMap"><div class="map-grid"></div><div class="map-overlay">📍 ${trail.length} pings</div></div>
-      <p style="font-size:0.75rem;color:var(--muted);">Logged every 10 minutes while clocked in</p>
-    </div>
-    <div class="card">
-      <div class="card-title">Location Log</div>
-      ${trail.map((p,i)=>`
-        <div class="list-item">
-          <div style="width:26px;height:26px;border-radius:50%;background:${i===trail.length-1?'#d1fae5':'#dbeafe'};display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;color:${i===trail.length-1?'#065f46':'#1e40af'};">${i+1}</div>
-          <div class="list-info"><div class="list-name">${p.time}</div><div class="list-sub">${p.lat}, ${p.lng}</div></div>
-          <span class="badge ${i===trail.length-1?'badge-green':'badge-blue'}">${i===trail.length-1?'Latest':'Ping'}</span>
-        </div>`).join('')}
-    </div>`;
-  setTimeout(()=>drawTrail('empMap',trail),80);
-}
-
-async function renderEmpCerts(){
-  const myCerts=currentEmp?await loadCerts(currentEmp.id):[];
-  $('main').innerHTML=`
-    <div class="card">
-      <div class="card-title">My Certifications</div>
-      ${myCerts.length===0?'<p style="color:var(--muted);font-size:0.875rem;">No certifications on file. Contact your office manager.</p>':
-        myCerts.map(c=>{
-          const days=daysUntil(c.expiry_date),b=certBadge(days);
-          const pct=Math.max(0,Math.min(100,(days/365)*100));
-          return`<div class="cert-item">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-              <strong style="font-size:0.875rem;">${c.name}</strong>
-              <span class="badge ${b.cls}">${b.label}</span>
-            </div>
-            <div style="font-size:0.72rem;color:var(--muted);margin:0.2rem 0 0.35rem;">${c.issuing_body||''} · Expires ${c.expiry_date}</div>
-            <div class="cert-bar-bg"><div class="cert-bar-fill" style="width:${pct}%;background:${certBarColor(days)};"></div></div>
-          </div>`;
-        }).join('')}
-    </div>
-    <div class="card" style="text-align:center;padding:1.5rem;">
-      <div style="font-size:1.75rem;margin-bottom:0.4rem;">📄</div>
-      <div style="font-weight:700;margin-bottom:0.2rem;">Need to update a cert?</div>
-      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.875rem;">Contact your office manager.</div>
-      <button class="btn btn-primary btn-sm" style="margin:0 auto;" onclick="activeChat='office';showSection('chat')">Message Office →</button>
-    </div>`;
-}
-
-async function renderAlerts(){
-  const certs=await loadCerts();
-  const expiring=certs.filter(c=>daysUntil(c.expiry_date)<=60);
-  const anns=await loadAnnouncements();
-  $('main').innerHTML=`
-    <div class="card">
-      <div class="card-title">🔔 Cert Alerts</div>
-      ${expiring.map(c=>{
-        const e=getEmp(c.employee_id),days=daysUntil(c.expiry_date);
-        return`<div class="list-item">
-          <div style="font-size:1.4rem;">${days<0?'🔴':'⚠️'}</div>
-          <div class="list-info"><div class="list-name">${c.name}</div><div class="list-sub">${e?fullName(e):c.employee_id} · ${days<0?'EXPIRED':days+' days left'}</div></div>
-          <span class="badge ${days<0?'badge-red':'badge-amber'}">${days<0?'Expired':'Soon'}</span>
-        </div>`;
-      }).join('')||'<p style="color:var(--muted);font-size:0.875rem;">No urgent cert alerts.</p>'}
-    </div>
-    <div class="card">
-      <div class="card-title">📢 Announcements</div>
-      ${anns.map(a=>`
-        <div class="ann ann-${a.type}">
-          <div class="ann-title">${a.title}</div>
-          <div class="ann-body">${a.body}</div>
-          <div class="ann-meta">${a.author} · ${a.created_at?.slice(0,10)}</div>
-        </div>`).join('')||'<p style="color:var(--muted);">No announcements.</p>'}
-    </div>`;
-}
-
-async function renderAdmin(s){
-  if(s==='home')       await renderAdminHome();
-  else if(s==='team')       await renderAdminTeam();
-  else if(s==='timesheets') await renderAdminTime();
-  else if(s==='chat')       await renderChat();
-  else if(s==='reports')    renderAdminReports();
-  else if(s==='alerts')     await renderAlerts();
-}
-
-async function renderAdminHome(){
-  const certs=await loadCerts();
-  const entries=await loadTimeEntries();
-  const anns=await loadAnnouncements();
-  const today=new Date().toISOString().split('T')[0];
-  const expiring=certs.filter(c=>daysUntil(c.expiry_date)<=60);
-  const pending=entries.filter(t=>t.status==='Pending');
-  const todayE=entries.filter(t=>t.date===today);
-  $('main').innerHTML=`
-    ${expiring.length?`<div class="alert-bar">⚠️ ${expiring.length} cert(s) expiring within 60 days <button class="btn btn-sm btn-amber" onclick="showSection('alerts')">View</button></div>`:''}
-    <div class="stats-row">
-      <div class="stat-box"><div class="stat-num">${allEmployees.length}</div><div class="stat-lbl">Total Staff</div></div>
-      <div class="stat-box"><div class="stat-num">${todayE.length}</div><div class="stat-lbl">Clocked In</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--red)">${pending.length}</div><div class="stat-lbl">Pending</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--amber)">${expiring.length}</div><div class="stat-lbl">Cert Alerts</div></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Field Status — Today</div>
-      ${allEmployees.filter(e=>e.department==='Field').map(emp=>{
-        const entry=todayE.find(t=>t.employee_id===emp.id);
-        return`<div class="list-item">
-          <div class="avatar">${initials(emp)}</div>
-          <div class="list-info"><div class="list-name">${fullName(emp)}</div><div class="list-sub">${emp.position||''}</div></div>
-          <div class="list-right">${entry?`<span class="badge badge-green">✓ ${entry.clock_in}</span>`:'<span class="badge badge-gray">Not in</span>'}</div>
-        </div>`;
-      }).join('')||'<p style="color:var(--muted);font-size:0.875rem;">No field employees yet.</p>'}
-    </div>
-    <div class="card">
-      <div class="card-title">📢 Announcements <button class="btn btn-primary btn-sm" onclick="openAnnModal()">+ Post</button></div>
-      ${anns.slice(0,2).map(a=>`
-        <div class="ann ann-${a.type}">
-          <div class="ann-title">${a.title}</div>
-          <div class="ann-body">${a.body}</div>
-          <div class="ann-meta">${a.author} · ${a.created_at?.slice(0,10)}</div>
-        </div>`).join('')||'<p style="color:var(--muted);">No announcements yet.</p>'}
-    </div>`;
-}
-
-async function renderAdminTeam(){
-  const certs=await loadCerts();
-  $('main').innerHTML=`
-    <div class="card">
-      <div class="card-title">Team <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">+ Add</button></div>
-      ${allEmployees.map(emp=>`
-        <div class="list-item">
-          <div class="avatar">${initials(emp)}</div>
-          <div class="list-info"><div class="list-name">${fullName(emp)}</div><div class="list-sub">${emp.position||''} · $${emp.hourly_rate}/hr</div></div>
-          <span class="badge badge-${emp.department==='Field'?'blue':'green'}">${emp.department||''}</span>
-        </div>`).join('')||'<p style="color:var(--muted);">No employees yet.</p>'}
-    </div>
-    <div class="card">
-      <div class="card-title">Certifications <button class="btn btn-primary btn-sm" onclick="openAddCertModal()">+ Add</button></div>
-      ${allEmployees.map(emp=>{
-        const empCerts=certs.filter(c=>c.employee_id===emp.id);
-        if(empCerts.length===0)return'';
-        return`<div style="padding:0.65rem 0;border-bottom:1px solid var(--border);">
-          <div style="font-weight:700;font-size:0.85rem;margin-bottom:0.4rem;">${fullName(emp)}</div>
-          ${empCerts.map(c=>{const days=daysUntil(c.expiry_date),b=certBadge(days);
-            return`<div style="display:flex;justify-content:space-between;margin-bottom:0.25rem;">
-              <span style="font-size:0.75rem;color:var(--muted)">${c.name}</span>
-              <span class="badge ${b.cls}" style="font-size:0.65rem;">${b.label}</span>
-            </div>`;
-          }).join('')}
-        </div>`;
-      }).join('')||'<p style="color:var(--muted);">No certifications on file.</p>'}
-    </div>`;
-}
-
-async function renderAdminTime(){
-  const entries=await loadTimeEntries();
-  $('main').innerHTML=`
-    <div class="card">
-      <div class="card-title">Time Entries <button class="btn btn-primary btn-sm" onclick="openTimeModal()">+ Log</button></div>
-      ${entries.map(t=>{
-        const h=t.total_hours||(t.clock_out?hrsCalc(t.clock_in,t.clock_out):'—');
-        return`<div class="list-item" style="flex-direction:column;align-items:stretch;gap:0.5rem;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:0.65rem;">
-              <div class="avatar avatar-sm">${t.employees?initials(t.employees):'?'}</div>
-              <div>
-                <div class="list-name">${t.employees?(t.employees.first_name+' '+t.employees.last_name):'Unknown'}</div>
-                <div class="list-sub">${t.date}</div>
-              </div>
-            </div>
-            <span class="badge ${t.status==='Approved'?'badge-green':'badge-amber'}">${t.status}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;background:var(--light);border-radius:8px;padding:0.5rem 0.75rem;">
-            <span style="font-size:0.78rem;color:var(--muted);">🟢 ${t.clock_in} → 🔴 ${t.clock_out||'--'}</span>
-            <strong style="font-size:0.875rem;">${h} hrs</strong>
-            ${t.status==='Pending'?`<button class="btn btn-sm btn-success" onclick="approveEntry('${t.id}')">✓ Approve</button>`:''}
-          </div>
-        </div>`;
-      }).join('')||'<p style="color:var(--muted);">No time entries yet.</p>'}
-    </div>
-    <div class="card">
-      <div class="card-title">Payroll Summary</div>
-      ${allEmployees.map(emp=>{
-        const empE=entries.filter(t=>t.employee_id===emp.id);
-        const totalH=empE.reduce((s,t)=>s+parseFloat(t.total_hours||0),0);
-        return`<div class="list-item">
-          <div class="avatar avatar-sm">${initials(emp)}</div>
-          <div class="list-info"><div class="list-name">${fullName(emp)}</div><div class="list-sub">${totalH.toFixed(1)} hrs · $${emp.hourly_rate}/hr</div></div>
-          <strong style="color:var(--green)">$${(totalH*emp.hourly_rate).toFixed(0)}</strong>
-        </div>`;
-      }).join('')}
-    </div>`;
-}
-
-async function approveEntry(id){
-  await db.from('time_entries').update({status:'Approved'}).eq('id',id);
-  renderAdminTime();
-}
-
-function renderAdminReports(){
-  $('main').innerHTML=`
-    <div class="card">
-      <div class="card-title">📁 Export CSV Reports</div>
-      <div style="display:flex;flex-direction:column;gap:0.75rem;">
-        <button class="btn btn-primary" onclick="downloadCSV('timesheet')">⬇️ Timesheet / Payroll</button>
-        <button class="btn btn-primary" onclick="downloadCSV('gps')">⬇️ GPS Breadcrumb Log</button>
-        <button class="btn btn-primary" onclick="downloadCSV('certs')">⬇️ Certifications Report</button>
-        <button class="btn btn-primary" onclick="downloadCSV('employees')">⬇️ Employee Directory</button>
-      </div>
-    </div>`;
-}
-
-async function renderChat(){
-  if(activeChat) await renderChatThread(activeChat);
-  else await renderChatList();
-}
-
-async function renderChatList(){
-  const contacts=allEmployees.filter(e=>e.id!==currentEmp?.id);
-  $('main').innerHTML=`
-    <div class="card" style="padding:0;">
-      <div style="padding:0.875rem 1.1rem;font-weight:700;border-bottom:1px solid var(--border);font-size:0.95rem;">Messages</div>
-      ${contacts.map(e=>`
-        <div class="chat-item" onclick="activeChat='${e.id}';showSection('chat')">
-          <div class="avatar">${initials(e)}</div>
-          <div class="list-info"><div class="list-name">${fullName(e)}</div><div class="list-sub">${e.position||''}</div></div>
-        </div>`).join('')||'<p style="padding:1rem;color:var(--muted);">No contacts found.</p>'}
-    </div>
-    ${role==='admin'?`<button class="btn btn-primary" onclick="openAnnModal()">📢 Post Announcement</button>`:''}`;
-}
-
-async function renderChatThread(otherId){
-  const other=getEmp(otherId);
-  const msgs=await loadMessages(otherId);
-  $('main').innerHTML=`
-    <div style="display:flex;flex-direction:column;height:calc(100vh - 155px);">
-      <button class="chat-back" onclick="activeChat=null;if(msgSubscription)db.removeChannel(msgSubscription);showSection('chat')">← Back</button>
-      <div style="font-weight:700;font-size:0.95rem;margin-bottom:0.65rem;">${other?fullName(other):otherId}</div>
-      <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0.45rem;padding-bottom:0.5rem;" id="msgArea">
-        ${msgs.map(m=>{
-          const isMe=m.sender_id===currentEmp?.id;
-          return`<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};">
-            <div class="msg-bubble ${isMe?'msg-out':'msg-in'}">${m.body}
-              <div class="msg-time">${new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
-            </div>
-          </div>`;
-        }).join('')||'<p style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">No messages yet. Say hello!</p>'}
-      </div>
-      <div class="msg-input-row">
-        <input type="text" id="chatIn" placeholder="Message…" onkeydown="if(event.key==='Enter')sendMsg('${otherId}')">
-        <button class="msg-send" onclick="sendMsg('${otherId}')">➤</button>
-      </div>
-    </div>`;
-  const area=$('msgArea');
-  if(area)area.scrollTop=99999;
-  if(msgSubscription)db.removeChannel(msgSubscription);
-  msgSubscription=db.channel('msgs-'+otherId)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},
-      ()=>{if(activeChat===otherId)renderChatThread(otherId);})
-    .subscribe();
-}
-
-async function sendMsg(otherId){
-  if(!currentEmp){alert('Employee record needed.');return;}
-  const input=$('chatIn');
-  const txt=input.value.trim(); if(!txt)return;
-  input.value='';
-  const{error}=await db.from('messages').insert([{
-    sender_id:currentEmp.id,recipient_id:otherId,body:txt,read:false
-  }]);
-  if(error){alert('Send failed: '+error.message);return;}
-  await renderChatThread(otherId);
-}
-
-function openModal(title,html){$('modalTitle').textContent=title;$('modalBody').innerHTML=html;$('modal').classList.add('active');}
-function closeModal(){$('modal').classList.remove('active');}
-$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal();});
-
-function openAnnModal(){
-  openModal('Post Announcement',`
-    <div class="form-group"><label>Title</label><input id="aT" placeholder="e.g. Safety Meeting Friday"></div>
-    <div class="form-group"><label>Message</label><textarea id="aB" rows="3" placeholder="Your message…"></textarea></div>
-    <div class="form-group"><label>Type</label><select id="aTy"><option value="info">ℹ️ Info</option><option value="warn">⚠️ Warning</option><option value="success">✅ Good News</option></select></div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitAnn()">Post</button>
-    </div>`);
-}
-async function submitAnn(){
-  const t=$('aT').value.trim(),b=$('aB').value.trim();
-  if(!t||!b){alert('Fill all fields.');return;}
-  const{error}=await db.from('announcements').insert([{title:t,body:b,type:$('aTy').value,author:currentEmp?fullName(currentEmp):'Admin'}]);
-  if(error){alert('Error: '+error.message);return;}
-  closeModal(); showSection('home');
-}
-
-function openAddEmpModal(){
-  openModal('Add Employee',`
-    <div class="form-group"><label>First Name</label><input id="ef" placeholder="First"></div>
-    <div class="form-group"><label>Last Name</label><input id="el" placeholder="Last"></div>
-    <div class="form-group"><label>Email</label><input id="ee" type="email" placeholder="email@oktcs.com"></div>
-    <div class="form-group"><label>Position</label><input id="ep" placeholder="e.g. Flagger, TCS"></div>
-    <div class="form-group"><label>Department</label><select id="ed"><option>Field</option><option>Office</option></select></div>
-    <div class="form-group"><label>Hourly Rate ($)</label><input id="er" type="number" placeholder="22"></div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitEmp()">Add Employee</button>
-    </div>`);
-}
-async function submitEmp(){
-  const f=$('ef').value.trim(),l=$('el').value.trim(),e=$('ee').value.trim(),p=$('ep').value.trim(),d=$('ed').value,r=parseFloat($('er').value);
-  if(!f||!l||!e||!p||!r){alert('Fill all fields.');return;}
-  const{error}=await db.from('employees').insert([{first_name:f,last_name:l,email:e,position:p,department:d,hourly_rate:r,status:'Active'}]);
-  if(error){alert('Error: '+error.message);return;}
-  allEmployees=await loadEmployees();
-  closeModal(); showSection('team');
-}
-
-function openAddCertModal(){
-  const opts=allEmployees.map(e=>`<option value="${e.id}">${fullName(e)}</option>`).join('');
-  openModal('Add Certification',`
-    <div class="form-group"><label>Employee</label><select id="cEmp">${opts}</select></div>
-    <div class="form-group"><label>Certification Name</label><input id="cN" placeholder="e.g. Flagger Certification"></div>
-    <div class="form-group"><label>Issuing Body</label><input id="cB" placeholder="e.g. WSDOT"></div>
-    <div class="form-group"><label>Issue Date</label><input id="cI" type="date"></div>
-    <div class="form-group"><label>Expiry Date</label><input id="cE" type="date"></div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitCert()">Save</button>
-    </div>`);
-}
-async function submitCert(){
-  const empId=$('cEmp').value,n=$('cN').value.trim(),b=$('cB').value.trim(),i=$('cI').value,e=$('cE').value;
-  if(!empId||!n||!i||!e){alert('Fill required fields.');return;}
-  const{error}=await db.from('certifications').insert([{employee_id:empId,name:n,issuing_body:b,issued_date:i,expiry_date:e}]);
-  if(error){alert('Error: '+error.message);return;}
-  closeModal(); showSection('team');
-}
-
-function openTimeModal(){
-  const opts=allEmployees.map(e=>`<option value="${e.id}">${fullName(e)}</option>`).join('');
-  openModal('Log Time Entry',`
-    <div class="form-group"><label>Employee</label><select id="tE">${opts}</select></div>
-    <div class="form-group"><label>Date</label><input id="tD" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
-    <div class="form-group"><label>Clock In</label><input id="tI" type="time" value="07:00"></div>
-    <div class="form-group"><label>Clock Out</label><input id="tO" type="time" value="15:00"></div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitTime()">Save</button>
-    </div>`);
-}
-async function submitTime(){
-  const empId=$('tE').value,date=$('tD').value,ci=$('tI').value,co=$('tO').value;
-  if(!empId||!date||!ci||!co){alert('Fill all fields.');return;}
-  const h=hrsCalc(ci,co);
-  const{error}=await db.from('time_entries').insert([{employee_id:empId,date,clock_in:ci,clock_out:co,total_hours:h,status:'Pending'}]);
-  if(error){alert('Error: '+error.message);return;}
-  closeModal(); showSection('timesheets');
-}
-
-async function downloadCSV(type){
-  let cols=[],rows=[];
-  if(type==='timesheet'){
-    const entries=await loadTimeEntries();
-    cols=['Employee ID','Name','Dept','Position','Rate','Date','Clock In','Clock Out','Hours','Gross Pay','Status'];
-    rows=entries.map(t=>{
-      const n=(t.employees?.first_name||'')+' '+(t.employees?.last_name||'');
-      const h=t.total_hours||(t.clock_out?hrsCalc(t.clock_in,t.clock_out):'0');
-      return[t.employee_id,n,t.employees?.department,t.employees?.position,'$'+(t.employees?.hourly_rate||0),t.date,t.clock_in,t.clock_out||'--',h,'$'+((h*(t.employees?.hourly_rate||0)).toFixed(2)),t.status];
+    const lines=rows.map(function(r){
+      return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');
     });
-  } else if(type==='gps'){
-    const{data}=await db.from('gps_pings').select('*,employees(first_name,last_name)').order('pinged_at');
-    cols=['Employee ID','Name','Timestamp','Latitude','Longitude'];
-    rows=(data||[]).map(p=>[p.employee_id,(p.employees?.first_name||'')+' '+(p.employees?.last_name||''),p.pinged_at,p.latitude,p.longitude]);
-  } else if(type==='certs'){
-    const certs=await loadCerts();
-    cols=['Employee ID','Name','Certification','Issuing Body','Issue Date','Expiry Date','Days Left'];
-    rows=certs.map(c=>{const e=getEmp(c.employee_id)||{};const days=daysUntil(c.expiry_date);return[c.employee_id,fullName(e),c.name,c.issuing_body,c.issued_date,c.expiry_date,days<0?'EXPIRED':days];});
-  } else {
-    cols=['ID','First','Last','Email','Department','Position','Hourly Rate','Status'];
-    rows=allEmployees.map(e=>[e.id,e.first_name,e.last_name,e.email,e.department,e.position,e.hourly_rate,e.status]);
+    const csv=lines.join('\r\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=fn;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},200);
+  }catch(err){
+    alert('Download failed: '+err.message);
   }
-  const csv=[cols.join(','),...rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(','))].join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download=`oktcs_${type}_${new Date().toISOString().split('T')[0]}.csv`;
-  a.click();
 }
 
-function genDemoTrail(){
-  const t=[]; let lat=47.1532,lng=-122.4783;
-  for(let i=0;i<8;i++){lat+=(Math.sin(i*1.3)*0.003);lng+=(Math.cos(i*1.3)*0.003);t.push({time:`0${7+Math.floor(i*10/60)}:${String((i*10)%60).padStart(2,'0')}`,lat:lat.toFixed(5),lng:lng.toFixed(5)});}
-  return t;
-}
-function drawTrail(mapId,trail){
-  const map=$(mapId); if(!map||trail.length===0)return;
-  [...map.querySelectorAll('.trail-dot,.trail-line')].forEach(el=>el.remove());
-  const W=map.clientWidth,H=map.clientHeight,pad=22;
-  const lats=trail.map(p=>parseFloat(p.lat)),lngs=trail.map(p=>parseFloat(p.lng));
-  const minLat=Math.min(...lats),maxLat=Math.max(...lats),minLng=Math.min(...lngs),maxLng=Math.max(...lngs);
-  const xy=(lat,lng)=>({x:pad+(lng-minLng)/(maxLng-minLng||0.001)*(W-pad*2),y:H-pad-(lat-minLat)/(maxLat-minLat||0.001)*(H-pad*2)});
-  trail.forEach((p,i)=>{
-    const{x,y}=xy(parseFloat(p.lat),parseFloat(p.lng));
-    if(i<trail.length-1){const n=xy(parseFloat(trail[i+1].lat),parseFloat(trail[i+1].lng));const dx=n.x-x,dy=n.y-y,len=Math.sqrt(dx*dx+dy*dy),ang=Math.atan2(dy,dx)*180/Math.PI;const line=document.createElement('div');line.className='trail-line';line.style.cssText=`left:${x}px;top:${y}px;width:${len}px;transform:rotate(${ang}deg);`;map.appendChild(line);}
-    const dot=document.createElement('div');dot.className='trail-dot'+(i===trail.length-1?' current':'');dot.style.cssText=`left:${x}px;top:${y}px;`;map.appendChild(dot);
-  });
-}
-
-(async()=>{
-  const{data:{session}}=await db.auth.getSession();
-  if(session){
-    currentUser=session.user;
-    await loadCurrentEmp(session.user.email);
-    $('loginScreen').style.display='none';
-    $('appShell').style.display='flex';
-    await initApp();
-  }
-})();
 </script>
 </body>
 </html>
