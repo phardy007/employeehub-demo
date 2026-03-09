@@ -880,7 +880,7 @@ function boot(u,email){
     act('vAD');
     document.getElementById('aN0').classList.add('active');
     document.getElementById('aSB0').classList.add('active');
-    setTimeout(function(){startMsgPoll();},50);
+    setTimeout(renderThread,50);
   }else{
     document.getElementById('eNav').classList.remove('hidden');
     document.getElementById('aN').classList.add('hidden');
@@ -889,13 +889,13 @@ function boot(u,email){
     act('vEH');
     document.getElementById('eN0').classList.add('active');
     document.getElementById('eSB0').classList.add('active');
-    setTimeout(function(){startMsgPoll();},50);
+    renderThread();
   }
 }
 
 function signOut(){
   user=null; clocked=false;
-  stopGPS(); clearInterval(clkInt); stopMsgPoll(); pings=[]; usingRealMessages=false; for(var k in empIdCache) delete empIdCache[k];
+  stopGPS(); clearInterval(clkInt); pings=[];
   document.getElementById('app').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('li-e').value='';
@@ -1176,196 +1176,85 @@ function resetMap(){
   if(mapEl) mapEl.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:8px;color:var(--muted)"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg><span style="font-size:13px">Clock in to see your trail</span></div>';
 }
 
-// Shared message thread — persists across role switches
-let msgPollInterval=null;
-let lastMsgId=0;
-
-// Demo fallback messages shown when Supabase is unavailable (local testing)
-// Demo messages per thread
-const ALL_DEMO_THREADS={
-  'marcus': [
+// ── MESSAGING ──
+// All threads stored in memory — stable, no polling, no wipe
+const THREADS={
+  marcus:[
     {id:1,from:'office',body:'Hey Marcus — SR-99 Mon–Wed, 6am–3pm.',time:'2h ago'},
     {id:2,from:'marcus',body:'Got it, thanks Pamela!',time:'1h ago'},
-    {id:3,from:'office',body:'Reminder to renew your flagger cert before April 1.',time:'1h ago'},
+    {id:3,from:'office',body:'Reminder: renew your flagger cert before April 1.',time:'1h ago'},
     {id:4,from:'marcus',body:'See you Monday!',time:'45m ago'},
   ],
-  'ray': [
+  ray:[
     {id:5,from:'office',body:'Ray — you’re on I-405 Tuesday, 7am start.',time:'3h ago'},
     {id:6,from:'ray',body:'What time does I-405 start?',time:'2h ago'},
     {id:7,from:'office',body:'7am sharp. Meet at the staging area.',time:'2h ago'},
   ],
-  'tanya': [
+  tanya:[
     {id:8,from:'office',body:'Tanya — SR-99 Wednesday is confirmed.',time:'Yesterday'},
     {id:9,from:'tanya',body:'Thanks for the update!',time:'Yesterday'},
-  ],
-  'office': [
-    {id:1,from:'office',body:'Hey Marcus — SR-99 Mon–Wed, 6am–3pm.',time:'2h ago'},
-    {id:2,from:'marcus',body:'Got it, thanks Pamela!',time:'1h ago'},
-    {id:3,from:'office',body:'Reminder to renew your flagger cert before April 1.',time:'1h ago'},
-    {id:4,from:'marcus',body:'See you Monday!',time:'45m ago'},
   ]
 };
 
-let currentThread='marcus'; // default for admin; 'office' for employee
+let activeThread='marcus';
 
-function renderDemoMessages(){
-  const thrId=user.role==='admin'?'aMT':'eMT';
+function renderThread(){
+  const isAdmin=user&&user.role==='admin';
+  const thrId=isAdmin?'aMT':'eMT';
   const thr=document.getElementById(thrId);
   if(!thr) return;
-  const threadKey=user.role==='employee'?'office':currentThread;
-  const msgs=ALL_DEMO_THREADS[threadKey]||[];
+  const key=isAdmin?activeThread:'marcus';
+  const msgs=THREADS[key]||[];
   thr.innerHTML=msgs.map(function(m){
-    const isSelf=(user.role==='admin'&&m.from==='office')||(user.role==='employee'&&m.from==='marcus');
-    const senderName=m.from==='office'?'Office':m.from==='marcus'?'Marcus':m.from==='ray'?'Ray':'Tanya';
-    const delBtn=isSelf?'<button class="bbl-del" onclick="removeDemoMsg('+m.id+')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>':'';
+    const isSelf=isAdmin?(m.from==='office'):(m.from==='marcus');
+    const names={office:'Office',marcus:'Marcus',ray:'Ray',tanya:'Tanya'};
+    const del=isSelf?'<button class="bbl-del" onclick="delMsg(''+key+'','+m.id+')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>':'';
     return '<div class="bbl-wrap '+(isSelf?'self':'other')+'">'
-      +delBtn
+      +del
       +'<div class="bbl '+(isSelf?'s':'r')+'">'+m.body
-      +'<div class="bbl-m">'+(isSelf?'You':senderName)+' &middot; '+m.time+'</div>'
-      +'</div>'
-      +'</div>';
+      +'<div class="bbl-m">'+(isSelf?'You':names[m.from]||m.from)+' · '+m.time+'</div>'
+      +'</div></div>';
   }).join('');
   thr.scrollTop=thr.scrollHeight;
 }
 
-function removeDemoMsg(id){
+function delMsg(key,id){
   if(!confirm('Delete this message?')) return;
-  const threadKey=user.role==='employee'?'office':currentThread;
-  const msgs=ALL_DEMO_THREADS[threadKey];
-  if(!msgs) return;
-  const idx=msgs.findIndex(function(m){return m.id===id;});
-  if(idx>-1) msgs.splice(idx,1);
-  renderDemoMessages();
+  const arr=THREADS[key];
+  if(!arr) return;
+  const i=arr.findIndex(function(m){return m.id===id;});
+  if(i>-1) arr.splice(i,1);
+  renderThread();
 }
 
-// Cache employee IDs so we don't look them up on every poll
-const empIdCache={};
-
-async function getEmpId(email){
-  if(empIdCache[email]) return empIdCache[email];
-  const res=await sb('GET','employees','','email=eq.'+email+'&select=id');
-  if(res&&res[0]){ empIdCache[email]=res[0].id; return res[0].id; }
-  return null;
-}
-
-// Load messages from Supabase
-async function loadMessages(){
-  if(!user||!user.dbId){ renderDemoMessages(); return; }
-  const thrId=user.role==='admin'?'aMT':'eMT';
-  const thr=document.getElementById(thrId);
-  if(!thr) return;
-
-  let otherId, otherName;
-  if(user.role==='admin'){
-    const threadEmails={'marcus':'marcus@oktcs.net','ray':'ray@oktcs.net','tanya':'tanya@oktcs.net'};
-    const threadNameMap={'marcus':'Marcus','ray':'Ray','tanya':'Tanya'};
-    const email=threadEmails[currentThread]||'marcus@oktcs.net';
-    otherName=threadNameMap[currentThread]||'Employee';
-    otherId=await getEmpId(email);
-  } else {
-    otherName='Office';
-    otherId=await getEmpId('pamela@oktcs.net');
-  }
-  if(!otherId){ renderDemoMessages(); return; }
-
-  const msgQuery='or=(and(sender_id.eq.'+user.dbId+',receiver_id.eq.'+otherId+'),and(sender_id.eq.'+otherId+',receiver_id.eq.'+user.dbId+'))&order=sent_at.asc&select=*';
-  const data=await sb('GET','messages','',msgQuery);
-
-  // Supabase failed — keep what's showing
-  if(!data) return;
-  // No real messages yet — keep demo
-  if(data.length===0){ if(!usingRealMessages) renderDemoMessages(); return; }
-
-  // Real messages exist — render them
-  usingRealMessages=true;
-  thr.innerHTML=data.map(function(m){
-    const isSelf=m.sender_id===user.dbId;
-    const senderName=isSelf?'You':otherName;
-    const t=new Date(m.sent_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    const delBtn=isSelf?'<button class="bbl-del" onclick="deleteMsgDb('+m.id+')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>':'';
-    return '<div class="bbl-wrap '+(isSelf?'self':'other')+'">'
-      +delBtn
-      +'<div class="bbl '+(isSelf?'s':'r')+'">'+m.body
-      +'<div class="bbl-m">'+senderName+' &middot; '+t+'</div>'
-      +'</div>'
-      +'</div>';
-  }).join('');
-  thr.scrollTop=thr.scrollHeight;
-  if(data.length) lastMsgId=data[data.length-1].id;
-}
-
-let usingRealMessages=false;
-
-function startMsgPoll(){
-  // Always load immediately on login
-  loadMessages();
-  // Always keep polling — we need to catch incoming messages
-  msgPollInterval=setInterval(loadMessages, 5000);
-}
-
-function stopMsgPoll(){
-  clearInterval(msgPollInterval);
-  msgPollInterval=null;
-}
-
-// Render placeholder thread for when not connected
-function renderThread(role){
-  loadMessages();
-}
-
-async function deleteMsgDb(msgId){
-  if(!confirm('Delete this message?')) return;
-  await sb('DELETE','messages','','id=eq.'+msgId);
-  loadMessages();
-}
-
-function deleteMsg(idx,role){ deleteMsgDb(idx); }
-
-async function sm(w){
+function sm(w){
   const inp=document.getElementById(w==='e'?'eMI':'aMI');
   const txt=inp.value.trim(); if(!txt) return;
   inp.value='';
-  // If no Supabase connection, add to demo thread
-  if(!user||!user.dbId){
-    const newId=Date.now();
-    const threadKey=user.role==='employee'?'office':currentThread;
-    if(!ALL_DEMO_THREADS[threadKey]) ALL_DEMO_THREADS[threadKey]=[];
-    ALL_DEMO_THREADS[threadKey].push({
-      id:newId,
-      from:user.role==='admin'?'office':'marcus',
-      body:txt,
-      time:'just now'
-    });
-    renderDemoMessages();
-    return;
-  }
-  // Find receiver
-  const otherEmail=user.role==='employee'?'pamela@oktcs.net':'marcus@oktcs.net';
-  const rec=await sb('GET','employees','','email=eq.'+otherEmail+'&select=id');
-  if(!rec||!rec[0]){
-    // Supabase failed — add to demo thread
-    const threadKey2=user.role==='employee'?'office':currentThread;
-    if(!ALL_DEMO_THREADS[threadKey2]) ALL_DEMO_THREADS[threadKey2]=[];
-    ALL_DEMO_THREADS[threadKey2].push({id:Date.now(),from:user.role==='admin'?'office':'marcus',body:txt,time:'just now'});
-    renderDemoMessages();
-    return;
-  }
-  await sb('POST','messages',{
-    sender_id: user.dbId,
-    receiver_id: rec[0].id,
-    body: txt,
-    sent_at: new Date().toISOString()
-  });
-  // Add to local demo thread so it shows immediately + delete works locally
-  const threadKey3=user.role==='employee'?'office':currentThread;
-  if(!ALL_DEMO_THREADS[threadKey3]) ALL_DEMO_THREADS[threadKey3]=[];
-  ALL_DEMO_THREADS[threadKey3].push({
+  const isAdmin=user&&user.role==='admin';
+  const key=isAdmin?activeThread:'marcus';
+  if(!THREADS[key]) THREADS[key]=[];
+  THREADS[key].push({
     id:Date.now(),
-    from:user.role==='admin'?'office':'marcus',
+    from:isAdmin?'office':'marcus',
     body:txt,
     time:'just now'
   });
-  renderDemoMessages();
+  renderThread();
+  // Also save to Supabase in background (don't wait, don't re-render)
+  if(user&&user.dbId){
+    const otherEmail=isAdmin?(key==='marcus'?'marcus@oktcs.net':key==='ray'?'ray@oktcs.net':'tanya@oktcs.net'):'pamela@oktcs.net';
+    sb('GET','employees','','email=eq.'+otherEmail+'&select=id').then(function(rec){
+      if(rec&&rec[0]){
+        sb('POST','messages',{
+          sender_id:user.dbId,
+          receiver_id:rec[0].id,
+          body:txt,
+          sent_at:new Date().toISOString()
+        });
+      }
+    });
+  }
 }
 
 function openThread(el,name){
@@ -1373,12 +1262,11 @@ function openThread(el,name){
   document.querySelectorAll('.ch-li').forEach(function(c){c.classList.remove('act');});
   el.classList.add('act');
   el.querySelectorAll('.unrd').forEach(function(d){d.remove();});
-  // Set current thread key from name
   const nameMap={'Marcus Webb':'marcus','Ray Ortiz':'ray','Tanya Lowe':'tanya'};
-  currentThread=nameMap[name]||'marcus';
-  // Load real messages for this thread, fall back to demo
-  loadMessages();
+  activeThread=nameMap[name]||'marcus';
+  renderThread();
 }
+
 
 function postAnn(){
   const type=document.getElementById('aTyp').value;
