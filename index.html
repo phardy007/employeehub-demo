@@ -1220,19 +1220,12 @@ async function loadMessages(){
   const data=await sb('GET','messages','',
     'or=(sender_id.eq.'+user.dbId+',receiver_id.eq.'+user.dbId+')&order=sent_at.asc&select=*'
   );
-  // If Supabase fails, fall back to demo messages
-  if(!data){
-    renderDemoMessages();
-    return;
-  }
+  // If Supabase fails or returns nothing, keep whatever is showing (don't wipe demo)
+  if(!data || data.length===0) return;
+  // We have real messages — switch from demo to real
   const thrId=user.role==='admin'?'aMT':'eMT';
   const thr=document.getElementById(thrId);
   if(!thr) return;
-  // If no real messages yet, show demo so chat isn't empty
-  if(data.length===0){
-    renderDemoMessages();
-    return;
-  }
   thr.innerHTML=data.map(function(m){
     const isSelf=m.sender_id===user.dbId;
     const senderName=isSelf?'You':(user.role==='admin'?'Marcus':'Office');
