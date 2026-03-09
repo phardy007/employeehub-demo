@@ -895,7 +895,7 @@ function boot(u,email){
 
 function signOut(){
   user=null; clocked=false;
-  stopGPS(); clearInterval(clkInt); stopMsgPoll(); pings=[];
+  stopGPS(); clearInterval(clkInt); stopMsgPoll(); pings=[]; usingRealMessages=false;
   document.getElementById('app').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('li-e').value='';
@@ -1252,6 +1252,7 @@ async function loadMessages(){
   // If Supabase fails or returns nothing, keep whatever is showing (don't wipe demo)
   if(!data || data.length===0) return;
   // We have real messages — switch from demo to real
+  usingRealMessages=true;
   const thrId=user.role==='admin'?'aMT':'eMT';
   const thr=document.getElementById(thrId);
   if(!thr) return;
@@ -1271,9 +1272,15 @@ async function loadMessages(){
   if(data.length) lastMsgId=data[data.length-1].id;
 }
 
+let usingRealMessages=false;
+
 function startMsgPoll(){
+  // Initial load to check if real messages exist
   loadMessages();
-  msgPollInterval=setInterval(loadMessages, 5000);
+  msgPollInterval=setInterval(function(){
+    // Only keep polling if we've seen real messages or are on GitHub Pages
+    if(usingRealMessages) loadMessages();
+  }, 5000);
 }
 
 function stopMsgPoll(){
