@@ -1177,16 +1177,62 @@ function resetMap(){
 let msgPollInterval=null;
 let lastMsgId=0;
 
-// Load messages from Supabase
-async function loadMessages(){
-  if(!user||!user.dbId) return;
-  const data=await sb('GET','messages','',
-    'or=(sender_id.eq.'+user.dbId+',receiver_id.eq.'+user.dbId+')&order=sent_at.asc&select=*'
-  );
-  if(!data) return;
+// Demo fallback messages shown when Supabase is unavailable (local testing)
+const DEMO_MESSAGES=[
+  {id:1,from:'office',name:'Office',body:'Hey Marcus — SR-99 Mon–Wed, 6am–3pm.',time:'2h ago'},
+  {id:2,from:'marcus',name:'Marcus',body:'Got it, thanks Pamela!',time:'1h ago'},
+  {id:3,from:'office',name:'Office',body:'Reminder to renew your flagger cert before April 1.',time:'1h ago'},
+  {id:4,from:'marcus',name:'Marcus',body:'See you Monday!',time:'45m ago'},
+];
+
+function renderDemoMessages(){
   const thrId=user.role==='admin'?'aMT':'eMT';
   const thr=document.getElementById(thrId);
   if(!thr) return;
+  thr.innerHTML=DEMO_MESSAGES.map(function(m){
+    const isSelf=(user.role==='admin'&&m.from==='office')||(user.role==='employee'&&m.from==='marcus');
+    const delBtn=isSelf?'<button class="bbl-del" onclick="removeDemoMsg('+m.id+')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>':'';
+    return '<div class="bbl-wrap '+(isSelf?'self':'other')+'">'
+      +delBtn
+      +'<div class="bbl '+(isSelf?'s':'r')+'">'+m.body
+      +'<div class="bbl-m">'+(isSelf?'You':m.name)+' &middot; '+m.time+'</div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+  thr.scrollTop=thr.scrollHeight;
+}
+
+function removeDemoMsg(id){
+  if(!confirm('Delete this message?')) return;
+  const idx=DEMO_MESSAGES.findIndex(function(m){return m.id===id;});
+  if(idx>-1) DEMO_MESSAGES.splice(idx,1);
+  renderDemoMessages();
+}
+
+// Load messages from Supabase
+async function loadMessages(){
+  if(!user) return;
+  // If no dbId yet (local testing), show demo messages
+  if(!user.dbId){
+    renderDemoMessages();
+    return;
+  }
+  const data=await sb('GET','messages','',
+    'or=(sender_id.eq.'+user.dbId+',receiver_id.eq.'+user.dbId+')&order=sent_at.asc&select=*'
+  );
+  // If Supabase fails, fall back to demo messages
+  if(!data){
+    renderDemoMessages();
+    return;
+  }
+  const thrId=user.role==='admin'?'aMT':'eMT';
+  const thr=document.getElementById(thrId);
+  if(!thr) return;
+  // If no real messages yet, show demo so chat isn't empty
+  if(data.length===0){
+    renderDemoMessages();
+    return;
+  }
   thr.innerHTML=data.map(function(m){
     const isSelf=m.sender_id===user.dbId;
     const senderName=isSelf?'You':(user.role==='admin'?'Marcus':'Office');
@@ -1230,14 +1276,28 @@ async function sm(w){
   const inp=document.getElementById(w==='e'?'eMI':'aMI');
   const txt=inp.value.trim(); if(!txt) return;
   inp.value='';
+  // If no Supabase connection, add to demo thread
   if(!user||!user.dbId){
-    console.warn('Not logged in to Supabase yet');
+    const newId=Date.now();
+    DEMO_MESSAGES.push({
+      id:newId,
+      from:user&&user.role==='admin'?'office':'marcus',
+      name:user&&user.role==='admin'?'Office':(user?user.name:'Marcus'),
+      body:txt,
+      time:'just now'
+    });
+    renderDemoMessages();
     return;
   }
   // Find receiver
   const otherEmail=user.role==='employee'?'pamela@oktcs.net':'marcus@oktcs.net';
   const rec=await sb('GET','employees','','email=eq.'+otherEmail+'&select=id');
-  if(!rec||!rec[0]) return;
+  if(!rec||!rec[0]){
+    // Supabase failed — add to demo thread
+    DEMO_MESSAGES.push({id:Date.now(),from:user.role==='admin'?'office':'marcus',name:user.role==='admin'?'Office':user.name,body:txt,time:'just now'});
+    renderDemoMessages();
+    return;
+  }
   await sb('POST','messages',{
     sender_id: user.dbId,
     receiver_id: rec[0].id,
