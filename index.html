@@ -1246,9 +1246,21 @@ async function loadMessages(){
     renderDemoMessages();
     return;
   }
-  const data=await sb('GET','messages','',
-    'or=(sender_id.eq.'+user.dbId+',receiver_id.eq.'+user.dbId+')&order=sent_at.asc&select=*'
-  );
+  // For admin, filter by the currently selected thread person
+  let msgQuery;
+  if(user.role==='admin'){
+    // Look up the selected employee's dbId
+    const threadEmails={'marcus':'marcus@oktcs.net','ray':'ray@oktcs.net','tanya':'tanya@oktcs.net'};
+    const threadEmail=threadEmails[currentThread]||'marcus@oktcs.net';
+    const emp=await sb('GET','employees','','email=eq.'+threadEmail+'&select=id');
+    if(!emp||!emp[0]) return;
+    const otherId=emp[0].id;
+    msgQuery='or=(and(sender_id.eq.'+user.dbId+',receiver_id.eq.'+otherId+'),and(sender_id.eq.'+otherId+',receiver_id.eq.'+user.dbId+'))&order=sent_at.asc&select=*';
+  } else {
+    // Employee only talks to admin (Pamela)
+    msgQuery='or=(sender_id.eq.'+user.dbId+',receiver_id.eq.'+user.dbId+')&order=sent_at.asc&select=*';
+  }
+  const data=await sb('GET','messages','',msgQuery);
   // If Supabase fails, keep whatever is showing
   if(!data) return;
   // If no messages yet, keep demo messages showing
@@ -1356,7 +1368,8 @@ function openThread(el,name){
   // Set current thread key from name
   const nameMap={'Marcus Webb':'marcus','Ray Ortiz':'ray','Tanya Lowe':'tanya'};
   currentThread=nameMap[name]||'marcus';
-  renderDemoMessages();
+  // Load real messages for this thread, fall back to demo
+  loadMessages();
 }
 
 function postAnn(){
