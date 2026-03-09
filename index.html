@@ -1249,8 +1249,10 @@ async function loadMessages(){
   const data=await sb('GET','messages','',
     'or=(sender_id.eq.'+user.dbId+',receiver_id.eq.'+user.dbId+')&order=sent_at.asc&select=*'
   );
-  // If Supabase fails or returns nothing, keep whatever is showing (don't wipe demo)
-  if(!data || data.length===0) return;
+  // If Supabase fails, keep whatever is showing
+  if(!data) return;
+  // If no messages yet, keep demo messages showing
+  if(data.length===0) return;
   // We have real messages — switch from demo to real
   usingRealMessages=true;
   const thrId=user.role==='admin'?'aMT':'eMT';
@@ -1275,12 +1277,10 @@ async function loadMessages(){
 let usingRealMessages=false;
 
 function startMsgPoll(){
-  // Initial load to check if real messages exist
+  // Always load immediately on login
   loadMessages();
-  msgPollInterval=setInterval(function(){
-    // Only keep polling if we've seen real messages or are on GitHub Pages
-    if(usingRealMessages) loadMessages();
-  }, 5000);
+  // Always keep polling — we need to catch incoming messages
+  msgPollInterval=setInterval(loadMessages, 5000);
 }
 
 function stopMsgPoll(){
